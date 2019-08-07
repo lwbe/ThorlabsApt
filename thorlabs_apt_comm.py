@@ -1,4 +1,5 @@
-import sys
+import sys,json
+import pprint
 import struct
 
 
@@ -24,302 +25,34 @@ command_structure and response structure
 
 
 
+ERROR = 4
+WARN  = 3
+DEBUG = 2
+INFO  = 1
+NONE  = 0
 
-DEBUG=True
+LOG_LEVEL=INFO
 
-def debug(*args):
-    if DEBUG:
-        print(" ".join([str(i) for i in args]))
+pprint_dict=pprint.PrettyPrinter(indent=2,depth=4)
+print_dict=pprint_dict.pprint
 
+# utility functions
+def log(level,msg):
 
-tac_data = { "default_command_structure": [
-    { "field" : "msg_id",                        "format" : "word",    },      
-    { "field" : "param1",                        "format" : "uchar",    },
-    { "field" : "param2",                        "format" : "uchar",    },
-    { "field" : "dest",                          "format" : "uchar",    },
-    { "field" : "source",                        "format" : "uchar",    },
-],
-             "default_response_structure": [    
-                 { "field" : "msg_id",   "format" : "word",    },      
-                 { "field" : "param1",   "format" : "uchar",    },
-                 { "field" : "param2",   "format" : "uchar",    },
-                 { "field" : "dest",     "format" : "uchar",    },
-                 { "field" : "source",   "format" : "uchar",    },
-             ],
+    if level <= LOG_LEVEL:
+        print(msg)
 
-             "MGMSG_MOD_IDENTIFY": { "msg_id"   : 0x0223,},
-             "MGMSG_HW_REQ_INFO" : { "msg_id"   : 0x0005, 
-                                     "response" : {
-                                         "keyword" : "MGMSG_HW_GET_INFO",
-                                         "msg_id": 0x0006,   
-                                         "response_structure" : [ 
-                                             { "field" : "serial_number",                 "format" : "long", },
-                                             { "field" : "model_number",                  "format" : "char[8]", },
-                                             { "field" : "type",                          "format" : "word",    },
-                                             { "field" : "firmware_version_minor_rev " ,  "format" : "uchar",}, 
-                                             { "field" : "firmware_version_interim_rev ", "format" : "uchar",}, 
-                                             { "field" : "firmware_version_major_rev ",   "format" : "uchar",}, 
-                                             { "field" : "firmware_version_unused ",      "format" : "uchar",}, 
-                                             { "field" : "internal_data",                 "format" : "char[60]",}, 
-                                             { "field" : "HW Version",                    "format" : "word",},
-                                             { "field" : "Mod_state",                     "format" : "word",},
-                                             { "field" : "nb_channels",                   "format" : "word",},
-                                         ],
-                                     },
-                                 },
+def format_msg(msg):
+    return("\t%s" % msg.replace("\n","\n\t"))
 
-             "MGMSG_MOT_MOVE_HOME":  { "msg_id"   : 0x0443,
-                                      "response" : {
-                                           "keyword": "MGMSG_MOT_MOVE_HOMED",
-                                           "msg_id" : 0x0444,
-                                           "response_structure" : [],
-                                       }
-                                },
-            
-             "MGMSG_MOT_SET_LIMSWITCHPARAMS": {"msg_id" : 0x423,
-                                               "command_structure" : [
-                                                   { "field" : "chan_id",       "format" : "word", },      
-                                                   { "field" : "CW_hardlimit",  "format" : "word", }, 
-                                                   { "field" : "CCW_hardlimit", "format" : "word", }, 
-                                                   { "field" : "CW_softlimit",  "format" : "long", }, 
-                                                   { "field" : "CCW_softlimit", "format" : "long", }, 
-                                                   { "field" : "Limit_mode",    "format" : "word", }, 
-                                               ],
-                                           },
-             "MGMSG_MOT_REQ_LIMSWITCHPARAMS": {"msg_id" : 0x424,
-                                               "response": {
-                                                   "keyword":"MGMSG_MOT_GET_LIMSWITCHPARAMS",
-                                                   "msg_id" : 0x425,
-                                                   
-                                                   "response_structure" : [
-                                                       { "field" : "chan_id",       "format" : "word", },      
-                                                       { "field" : "CW_hardlimit",  "format" : "word", }, 
-                                                       { "field" : "CCW_hardlimit", "format" : "word", }, 
-                                                       { "field" : "CW_softlimit",  "format" : "long", }, 
-                                                       { "field" : "CCW_softlimit", "format" : "long", }, 
-                                                       { "field" : "Limit_mode",    "format" : "word", }, 
-                                                   ],
-                                               },
-                                           },
-             "MGMSG_HW_START_UPDATEMSGS": {"msg_id": 0x0011,},
-             "MGMSG_HW_STOP_UPDATEMSGS": {"msg_id": 0x0012,},
+def on_warning(msg):
+    print("WARN\t:\n %s",format_msg(msg))
 
-             "MGMSG_MOT_REQ_STATUSUPDATE": {"msg_id": 0x0480,
-                                            "response": {
-                                                "keyword":"MGMSG_MOT_GET_STATUSUPDATE",
-                                                "msg_id" : 0x481,
-                                                
-                                                "response_structure" : [
-                                                    { "field" : "chan_id",      "format" : "word", },      
-                                                    { "field" : "Position",     "format" : "long", }, 
-                                                    { "field" : "EncCount",     "format" : "long", }, 
-                                                    { "field" : "Status Bits",  "format" : "dword", }, 
-                                                    { "field" : "Chan Ident 2", "format" : "word", }, 
-                                                    { "field" : "Unused_1",     "format" : "long", },  
-                                                    { "field" : "Unused_2",     "format" : "long", },  
-                                                    { "field" : "Unused_3",     "format" : "long", }, 
-                                                ],
-                                            },
-                                        },
-             "MGMSG_HW_NO_FLASH_PROGRAMMING": {"msg_id": 0x0018,},
-             
-             "MGMSG_MOD_SET_CHANENABLESTATE": {"msg_id": 0x0210,},
-             "MGMSG_MOD_REQ_CHANENABLESTATE": {"msg_id": 0x0211,
-                                               "response": {
-                                                   "keyword": "MGMSG_MOD_GET_CHANENABLESTATE",
-                                                   "msg_id": 0x212,
-                                                   "response_structure": []
-                                               },
-                                           },
-
-             "MGMSG_MOD_SET_POSCOUNTER": {"msg_id": 0x0410,
-                                          "command_structure":[
-                                              { "field" : "chan_id",       "format" : "word", },      
-                                              { "field" : "Position",  "format" : "long", },
-                                          ]
-                                      },
-             "MGMSG_MOT_REQ_POSCOUNTER": {"msg_id": 0x0411,
-                                          "response": {
-                                              "keyword":"MGMSG_MOT_GET_POSCOUNTER",
-                                              "msg_id" : 0x0412,
-                                              
-                                              "response_structure" : [
-                                                  { "field" : "chan_id",       "format" : "word", },      
-                                                  { "field" : "Position",  "format" : "long", },
-                                              ],
-                                          },
-                                      },
-             "MGMSGS_MOT_SET_VELPARAMS": {"msg_id" : 0x413,
-                                          "command_structure":[
-                                              {"field" : "Chan_id"      , "format":"word",},
-                                              {"field" : "Min_velocity" , "format":"long",},
-                                              {"field" : "Accel"        , "format":"long",},                                              
-                                              {"field" : "Max_velocity" , "format":"long",},
-                                          ]
-                                      },
-             "MGMSGS_MOT_REQ_VELPARAMS": {"msg_id" : 0x414,
-                                          "response" :{
-                                              "keyword" : "MGMSGS_MOT_GET_VELPARAMS",
-                                              "msg_id" : 0x415,
-                                              "response_structure":[
-                                                  {"field" : "Chan_id"      , "format":"word",},
-                                                  {"field" : "Min_velocity" , "format":"long",},
-                                                  {"field" : "Accel"        , "format":"long",},                                              
-                                                  {"field" : "Max_velocity" , "format":"long",},
-                                              ]
-                                          },
-                                      },
-
-             "MGMSGS_MOT_SET_JOGPARAMS": {"msg_id" : 0x0416,
-                                          "command_structure":[
-                                              {"field" : "Chan_id"       , "format":"word",},
-                                              {"field" : "Jog_mode"      , "format":"word",},
-                                              {"field" : "Jog_step_size" , "format":"long",},
-                                              {"field" : "Min_velocity"  , "format":"long",},
-                                              {"field" : "Jog_accel"        , "format":"long",},                                              
-                                              {"field" : "Jog_max_velocity" , "format":"long",},
-                                              {"field" : "Jog_stop_mode"      , "format":"word",},
-                                          ]
-                                      },
-             "MGMSGS_MOT_REQ_JOGPARAMS": {"msg_id" : 0x0417,
-                                          "response":{
-                                              "keyword":"MGMSGS_MOT_GET_JOGPARAMS",
-                                              "msg_id" : 0x0418,
-                                              "response_structure":[
-                                                  {"field" : "Chan_id"       , "format":"word",},
-                                                  {"field" : "Jog_mode"      , "format":"word",},
-                                                  {"field" : "Jog_step_size" , "format":"long",},
-                                                  {"field" : "Min_velocity"  , "format":"long",},
-                                                  {"field" : "Jog_accel"        , "format":"long",},                                              
-                                                  {"field" : "Jog_max_velocity" , "format":"long",},
-                                                  {"field" : "Jog_stop_mode"      , "format":"word",}
-                                              ]
-                                          },
-                                      },
-             "MGMSGS_MOT_SET_GENMOVEPARAMS": {"msg_id" : 0x043A,
-                                              "command_structure":[
-                                                  {"field" : "Chan_id"       , "format":"word",},
-                                                  {"field" : "Backlash_distance"      , "format":"long",}
-                                              ]
-                                          },
-             "MGMSGS_MOT_REQ_GENMOVEPARAMS": {"msg_id" : 0x043B,
-                                              "response":{
-                                                  "keyword" : "MGMSGS_MOT_SET_GENMOVEPARAMS",
-                                                  "msg_id" : 0x043C,
-                                                  "response_structure":[
-                                                      {"field" : "Chan_id"       , "format":"word",},
-                                                      {"field" : "Backlash_distance"      , "format":"long",}
-                                                  ]
-                                              },
-                                          },
-
-             "MGMSGS_MOT_SET_MOVERELPARAMS": {"msg_id" : 0x0445,
-                                              "command_structure":[
-                                                  {"field" : "Chan_id"       , "format":"word",},
-                                                  {"field" : "Relative_distance"      , "format":"long",}
-                                              ]
-                                          },
-
-             "MGMSGS_MOT_REQ_MOVERELPARAMS": {"msg_id" : 0x0446,
-                                              "response":{
-                                                  "keyword":"MGMSGS_MOT_GET_MOVERELPARAMS",
-                                                  "msg_id" : 0x0447,
-                                                  "response_structure":[
-                                                      {"field" : "Chan_id"       , "format":"word",},
-                                                      {"field" : "Relative_distance"      , "format":"long",}
-                                                  ]
-                                              },
-                                          },
-             "MGMSGS_MOT_SET_MOVEABSPARAMS": {"msg_id" : 0x0450,
-                                              "command_structure":[
-                                                  {"field" : "Chan_id"       , "format":"word",},
-                                                  {"field" : "Absolute_position"      , "format":"long",}
-                                              ]
-                                          },
-             "MGMSGS_MOT_REQ_MOVEABSPARAMS": {"msg_id" : 0x0451,
-                                              "response" :{
-                                                  "keyword": "MGMSGS_MOT_GET_MOVEABSPARAMS",
-                                                  "msg_id" : 0x0452,
-                                                  "response_structure":[
-                                                      {"field" : "Chan_id"       , "format":"word",},
-                                                      {"field" : "Absolute_position"      , "format":"long",}
-                                                  ]
-                                          },
-                                          },
-             "MGMSGS_MOT_SET_HOMEPARAMS": {"msg_id" : 0x0440,
-                                           "command_structure":[
-                                               {"field" : "Chan_id"         , "format":"word",},
-                                               {"field" : "Home_direction"  , "format":"word",},
-                                               {"field" : "Limit_switch"    , "format":"word",},
-                                               {"field" : "Home_Velocity"   , "format":"long",},
-                                               {"field" : "Offset_distance" , "format":"long",}
-                                           ]
-                                       },
-            "MGMSGS_MOT_REQ_HOMEPARAMS": {"msg_id" : 0x0441,
-                                           "response": {
-                                               "keyword": "MGMSGS_MOT_GET_HOMEPARAMS",
-                                               "msg_id" : 0x0442,
-                                               "command_structure":[
-                                                   {"field" : "Chan_id"         , "format":"word",},
-                                                   {"field" : "Home_direction"  , "format":"word",},
-                                                   {"field" : "Limit_switch"    , "format":"word",},
-                                                   {"field" : "Home_Velocity"   , "format":"long",},
-                                                   {"field" : "Offset_distance" , "format":"long",}
-                                               ]
-                                           },
-                                       },
-            "MGMSG_MOT_MOVE_RELATIVE":{"msg_id": 0x0448,
-                                       #"as_long_version" : True,
-                                       #"command_structure":[
-                                       #    {"field" : "Chan_id"       , "format":"word",},
-                                       #    {"field" : "Relative_distance"      , "format":"long",}
-                                       #]
-                                   },
-            "MGMSG_MO_MOVE_COMPLETED" : { "msg_id":0x464,
-                                          "response_structure" : [
-                                              { "field" : "chan_id",      "format" : "word", },      
-                                              { "field" : "Position",     "format" : "long", }, 
-                                              { "field" : "EncCount",     "format" : "long", }, 
-                                              { "field" : "Status Bits",  "format" : "dword", }, 
-                                              { "field" : "Chan Ident 2", "format" : "word", }, 
-                                          ],
-                                      },
-            "MGMSG_MOT_MOVE_ABSOLUTE":{"msg_id":0x453,
-                                       #"as_long_version":True,
-                                       
-                                       #"command_structure":[
-                                       #    {"field" : "Chan_id"       , "format":"word",},
-                                       #    {"field" : "Absolute_position"      , "format":"long",}
-                                       #]
-                                   },
-                                           
-            "MGMSG_MOT_MOVE_JOG" :{"msg_id":0x046A},
-            "MGMSGS_MOT_MOVE_VELOCITY": {"msg_id" : 0x0457,
-                                            # "command_structure":[
-                                            #     {"field" : "Chan_id"       , "format":"word",},
-                                            #     {"field" : "Relative_distance"      , "format":"long",}
-                                            # ]
-                                          },
-            "MGMSGS_MOT_MOVE_STOP" : {"msg_id" : 0x0465,
-                                            # "command_structure":[
-                                            #     {"field" : "Chan_id"       , "format":"word",},
-                                            #     {"field" : "Relative_distance"      , "format":"long",}
-                                            # ]
-                                          },
-            "MGMSGS_MOT_MOVE_STOPPED": {"msg_id" : 0x0466,
-                                          "response_structure" : [
-                                              { "field" : "chan_id",      "format" : "word", },      
-                                              { "field" : "Position",     "format" : "long", }, 
-                                              { "field" : "EncCount",     "format" : "long", }, 
-                                              { "field" : "Status Bits",  "format" : "dword", }, 
-                                              { "field" : "Chan Ident 2", "format" : "word", }, 
-                                          ],
-                                    },
-
-         }
-
-
-
+def on_error(msg):
+    print(msg)
+    print("ERR\t:\n %s\nABORTING !!",format_msg(msg))
+    sys.exit(0)
+    
 def tohex(v):
     try:
         h_v = hex(v)[2:]
@@ -334,96 +67,242 @@ def tohex(v):
 
     return ""
 
+# --
 
+class Thorlabs_apt_communication():
+    def __init__(self,filename="thorlabs_apt.json"):
+        """
+        read jsonfile and set the protocol
+        """
+        try:
+            self.tac_data = json.load(open(filename))
+        except (IOError,ValueError) as e:
+            on_error("%s" % e)
 
-def compute_size_pack_string(data,t):
-    if t not in ["command_structure","response_structure"]:
-        print('Error the type of command can only be "command_structure","response_structure" found %s !!\nABORTING' % t)
-        sys.exit(0)
+        self.msg_id_to_keyword={}
+        # available values
+        available_msg_keys = ["msg_id" , "msg_type" ,"data_structure" ,"as_long_version"]
+        available_msg_types = ["send",                  # send the command and don't expect answer  if not supplied this the 
+                                                        # default
+                               "read",                  # this cannot be send it is only a response
+                               "request"]               # this means that the keyword is a command waiting for an answer
+        available_data_structure_keys = ["field","format"]
+        available_data_format = ["word","short","dword","long","char","uchar","byte"]
 
-    _length = 0
-    pack_string = "<"
-    val_names = []
+        # check the data
+        apt_keys=self.tac_data.keys()
 
-    # get the value to evaluate it depends on the type command or return
-    # for command we have to take the default
+        # the header
+        if "header" not in apt_keys:
+            on_error("no header section in json file !!")
+            # do some preparation
+        msg_size,msg_pack_string,msg_val_names = self.compute_size_pack_string(self.tac_data["header"]["data_structure"])
+        self.tac_data["header"].update({"msg_size":msg_size,
+                                            "msg_pack_string":msg_pack_string,
+                                            "msg_val_names":msg_val_names})
+        
+        # everthing else
+        msg_ids = []
+        apt_keys.remove("header")
+        for k in apt_keys:
+            msg_dict = self.tac_data[k]
+            msg_keys = msg_dict.keys()
 
-    data_to_scan = tac_data["default_%s" % t][:]            
-    if t in data and data[t]:
-        data_to_scan.extend(data[t])
+            # check msg_id
+            if "msg_id" not in msg_keys:
+                on_error("missing \"msg_id\" for %s" % k)
 
-    for d in data_to_scan:
-        val_names.append(d["field"])
-        if d["format"] == "word":     # unsigned 16  bit integer
-            _length += 2
-            pack_string += "H"
-        elif d["format"] == "short":  # signed 16 bit integer
-            _length += 2
-            pack_string += "h"
-        elif d["format"] == "dword":  # unsigned 32 bit integer
-            _length += 4
-            pack_string += "I"
-        elif d["format"] == "long":
-            _length += 4
-            pack_string += "i"
-        elif d["format"] == "char":
-            _length += 1
-            pack_string += "c"
-        elif d["format"] == "uchar":
-            _length += 1
-            pack_string += "B"
-        elif d["format"].startswith("char["):
-            n_char = int(d["format"].replace("char[","").replace("]",""))
-            _length += n_char
-            pack_string += "%ds"%n_char
-        elif d["format"].startswith("byte["):
-            n_bytes = int(d["format"].replace("byte[","").replace("]",""))
-            _length += n_bytes
-            pack_string += "%dc"%n_bytes
-        else:
-            print("Unknown type \nABORTING")
+            msg_keys.remove("msg_id")
+            try:
+                msg_dict["msg_id"]=int(msg_dict["msg_id"],16)
+            except ValueError as e:
+                on_error("%s\nCannot convert to int msg_id of %s with value %s" % (msg_dict["msg_id"],k))
+
+            if msg_dict["msg_id"] in msg_ids:
+                on_error("duplicate \"msg_id\" entry %d (%s) for %s" % ( msg_dict["msg_id"],tohex(msg_dict["msg_id"]),k))
+            msg_ids.append(msg_dict["msg_id"])
+
+            # lookup msg_id to keyword
+            self.msg_id_to_keyword[msg_dict["msg_id"]]=k
+
+            #check msg_types
+            if "msg_type" not in msg_keys:
+                # let's assume it is write then
+                msg_dict["msg_type"]="send"
+
+                if msg_dict["msg_type"] not in available_msg_types:
+                    on_error("Unknown msg_type %s for %s (possible values are %s)" % (msg_dict["msg_type"],
+                                                                                      k,
+                                                                                      ", ".join(available_msg_types)))
+            else:
+                msg_keys.remove("msg_type")
+
+            # check data structures
+            msg_size,msg_pack_string,msg_val_names = 0,"",[]
+            if "data_structure" in msg_keys:
+                msg_keys.remove("data_structure")
+                ds=msg_dict["data_structure"]
+                for data in ds:
+                    for dk in data.keys():
+                        if dk not in available_data_structure_keys:
+                            on_error("Unknown data_structure key %s for %s (possible values are %s)" % (dk,
+                                                                                                        k,
+                                                                                                        ", ".join(available_data_structure_keys)))
+                if data["format"] not in available_data_format:
+                       on_error("Unknown data_format %s for %s (possible values are %s)" % (data["format"],
+                                                                                            k,
+                                                                                            ", ".join(available_data_format)))
+
+                # do some preparation
+                msg_size,msg_pack_string,msg_val_names = self.compute_size_pack_string(ds)
+
+            msg_dict.update({"msg_size":msg_size,
+                             "msg_pack_string":msg_pack_string,
+                             "msg_val_names":msg_val_names})
+
+            # check that left keys are legal.
+            for left_keys in msg_keys:
+                if left_keys not in available_msg_keys:
+                    on_error("Unknown key %s for %s (possible values are %s)" % (left_keys,
+                                                                                 k,
+                                                                                 ", ".join(available_msg_keys)))
+                    
+            
+    def compute_size_pack_string(self,data_to_scan):
+
+        _length = 0
+        pack_string = ""
+        val_names = []
+
+        # get the value to evaluate it depends on the type command or return
+        # for command we have to take the default
+
+        for d in data_to_scan:
+            val_names.append(d["field"])
+            if d["format"] == "word":     # unsigned 16  bit integer
+                _length += 2
+                pack_string += "H"
+            elif d["format"] == "short":  # signed 16 bit integer
+                _length += 2
+                pack_string += "h"
+            elif d["format"] == "dword":  # unsigned 32 bit integer
+                _length += 4
+                pack_string += "I"
+            elif d["format"] == "long":
+                _length += 4
+                pack_string += "i"
+            elif d["format"] == "char":
+                _length += 1
+                pack_string += "c"
+            elif d["format"] == "uchar":
+                _length += 1
+                pack_string += "B"
+            elif d["format"].startswith("char["):
+                n_char = int(d["format"].replace("char[","").replace("]",""))
+                _length += n_char
+                pack_string += "%ds"%n_char
+            elif d["format"].startswith("byte["):
+                n_bytes = int(d["format"].replace("byte[","").replace("]",""))
+                _length += n_bytes
+                pack_string += "%dc"%n_bytes
+            else:
+                print("Unknown type \nABORTING")
+                sys.exit(0)
+            log(DEBUG,"type : %s field_name %s total lentgh %d" % (d["format"],d["field"],_length))
+        return _length,pack_string,val_names
+
+    def get_keyword_data(self,keyword):
+        if keyword not in self.tac_data:
+            on_error("Keyword %s not found available keywords are: %s" % (keyword,
+                                                                          "\n\t".join(self.tac_data.keys())))
             sys.exit(0)
-        debug("type : %s field_name %s total lentgh %d" % (d["format"],d["field"],_length))
-    return _length,pack_string,val_names
-
-def get_keyword_data(keyword):
-    if keyword not in tac_data:
-        print("Keyword %s not found in the available keyword!!!\nABORTINGkeywords are:%s" % (keyword,"\n\t".join(tac_data.keys())))
-        sys.exit(0)
-    return tac_data[keyword]
+        return self.tac_data[keyword]
     
-def create_message(*args):
-    d = get_keyword_data(args[0])
-    c,pack_string,val_names = compute_size_pack_string(d,"command_structure")
-    if len(val_names) > 6:
-        if (args[3] >> 7) != 1:   
-            print("Asking for a long message but bit 7 of the 4 argument is not set to one")
-            for i,j  in zip(val_names,args):
-                print("%s %s (%s)" % (i,j,tohex(j)))
 
-            sys.exit(0)
-    #args[0] =  d["msg_id"]
-    try:
-        msg = struct.pack(pack_string ,d["msg_id"],*args[1:])
-    except struct.error as e:
-        print("Error : %s with pack_strings %s and args %s " % (e,pack_string,str(args[1:])))
-        print("Expected arguments are: %s"% (", ".join(val_names)))
-        sys.exit(0)
-    print("msg sent: %s (%s)" % (msg,tohex(msg)))
-    if "response" in d:
-        response_length,p,v = compute_size_pack_string(d["response"],"response_structure")
-        return response_length,msg
-    else:
-        return 0,msg
+    def create_message(self,*args):
+        d = self.get_keyword_data(args[0])
+        
+        pack_string="<"+self.tac_data["header"]["msg_pack_string"]+d["msg_pack_string"]
+        expected_names=self.tac_data["header"]["msg_val_names"] + d["msg_val_names"]
+        nb_args=len(expected_names)
 
-def read_message(keyword,msg):
-    d=get_keyword_data(keyword)
-    response_length,p,val_names = compute_size_pack_string(d["response"],"response_structure")
-    try:
-        unpack_msg = struct.unpack(p,msg)
-    except struct.error as e:
-        print("Error : %s pack_string %s msg %s " % (e,p,msg))
-        print("Mismatch between definition and what's received we expect %s " %  (", ".join(val_names)))
-    print("msg received: %s (%s)" % (msg,tohex(msg)))
-    debug("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
-    return "\n\t".join(["%s : %s (%s) "% (i,j,tohex(j)) for i,j in zip(val_names,struct.unpack(p,msg))])
+        if nb_args != len(args):
+            err_msg="the number of args supplied is not equal to the expected one\n"  
+            err_msg+="args supplied : %s" % ("\n\t".join(args))
+            err_msg+="args expected : %s" % ("\n\t".join(expected_names))
+            on_error(err_msg)
+            
+        if nb_args > 6:
+            if (args[3] >> 7) != 1:   
+                on_error("Asking for a long message but bit 7 of the 4 argument is not set to one")
+
+        try:
+            msg = struct.pack(pack_string ,d["msg_id"],*args[1:])
+        except struct.error as e:
+            err_msg = "Error : %s with pack_strings %s and args %s\n" % (e,pack_string,tohex(d["msg_id"])+str(args[1:]))
+            err_msg += "Expected arguments are: %s"% (", ".join(expected_names))
+            on_error(err_msg)
+
+        log(INFO,"msg sent: %s (%s)" % (msg,tohex(msg)))
+
+        return d["msg_type"],msg
+
+    def read_message(self,keyword,msg):
+        d=self.get_keyword_data(keyword)
+        pack_string="<"+self.tac_data["header"]["msg_pack_string"]+d["msg_pack_string"]
+        msg_val_names=self.tac_data["header"]["msg_val_names"]+d["msg_val_names"]
+        try:
+            unpack_msg = struct.unpack(pack_string,msg)
+        except struct.error as e:
+            print("Error : %s pack_string %s msg %s " % (e,p,msg))
+            print("Mismatch between definition and what's received we expect %s " %  (", ".join(val_names)))
+            print("msg received: %s (%s)" % (msg,tohex(msg)))
+            debug("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
+        return dict([(i,j) for i,j in zip(msg_val_names,unpack_msg)])
+
+    def print_message(self,unpack_msg):            
+        d=self.get_keyword_data(keyword)
+        pack_string="<"+self.tac_data["header"]["msg_pack_string"]+d["msg_pack_string"]
+        msg_val_names=self.tac_data["header"]["msg_val_names"]+d["msg_val_names"]
+        try:
+            unpack_msg = struct.unpack(pack_string,msg)
+        except struct.error as e:
+            print("Error : %s pack_string %s msg %s " % (e,p,msg))
+            print("Mismatch between definition and what's received we expect %s " %  (", ".join(val_names)))
+            print("msg received: %s (%s)" % (msg,tohex(msg)))
+            debug("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
+
+        return_msg="\tmsg_id %s (%s) %s\n\t" % (unpack_msg[0],unpack_msg[0],keyword)
+        return_msg+="\n\t".join(["%s : %s (%s) "% (i,j,tohex(j)) for i,j in zip(msg_val_names[1:],unpack_msg[1:])])
+        return return_msg
+
+
+        
+
+    def read_header(self,msg):
+        pack_string="<"+self.tac_data["header"]["msg_pack_string"]
+        try:
+            unpack_msg = struct.unpack(pack_string,msg)
+        except struct.error as e:
+            print("Error : %s pack_string %s msg %s " % (e,pack_string,msg))
+            print("Mismatch between definition and what's received we expect %s " %  (", ".join(val_names)))
+            print("msg received: %s (%s)" % (msg,tohex(msg)))
+            debug("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
+
+        if unpack_msg[0] in  self.msg_id_to_keyword: 
+            keyword = self.msg_id_to_keyword[unpack_msg[0]]
+            d = self.get_keyword_data(keyword)
+            return d["msg_size"],keyword
+        else:
+            on_error("cannot find keyword for value %d (%s) full msg %s" % (unpack_msg[0],tohex(unpack_msg[0]),str(unpack_msg)))
+
+if __name__=="__main__":
+    t=Thorlabs_apt_communication()
+
+    #print_dict(t.tac_data)
+
+    r,msg = t.create_message("MGMSG_HW_REQ_INFO",0,0,0x1,0x50)
+
+    print("%s %s" %(r,msg))
+
+

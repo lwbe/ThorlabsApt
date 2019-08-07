@@ -10,7 +10,7 @@ DEBUG = 2
 INFO  = 1
 NONE  = 0
 
-LOG_LEVEL=INFO
+LOG_LEVEL=DEBUG
 # utility functions
 def log(level,msg):
 
@@ -100,61 +100,14 @@ You didn't and thus aborting
             raw_recv_msg += self.read(length_to_read)
 
         recv_msg=self.thor_msg.read_message(keyword,raw_recv_msg)
-        log(DEBUG,"full message including header : %s" % (str(recv_msg)))
+        log(DEBUG,"full message including header : %s" % (recv_msg))
         return recv_msg
-    
-
-
-    # configuration of device
-    def configure(self):
-        # getting the info from the device. Parameter should not be hardcoded (or maybe they can)
-        HW_INFO = self.request_info(0,0,0x50,0x01)
-        if HW_INFO['model_number'].startswith('BSC101')
-            self.usteps_per_mm_p=409600
-            self.usteps_per_mm_v=21987328
-            self.usteps_per_mm_a=4506
-            self.hard_limit="0300"
-            self.need_completed = 0   #false
-            
-
-        elif HW_INFO['model_number'].startswith('LTS300'):
-            self.usteps_per_mm_p=25600
-            self.usteps_per_mm_v=25600
-            self.usteps_per_mm_a=25600
-            self.hard_limit="0200"
-            self.need_completed=1   #True
-
-        else:
-            print("unknow device %s" % HW_INFO['model_number'])
-
-        # set the various parameters
-        self.limitswitch()
-        self.velocity_params()
-        self.set_home_params()
-
-
-
-
+        
     # High Level function (user)
 
-    def move_to(self,channel,position):
-        action="MGMSG_MOT_SET_POSCOUNTER"
-        log(DEBUG,action)
-        return self.send_command(action,0,0,0x50 | 128 ,0x1,channel,position*self.usteps_per_mm_p)
-
-    def home(self,channel):
-        action="MGMSG_MOT_MOVE_HOME"
-        log(DEBUG,action)
-        res = self.send_command(action,0,0,0x50,0x01)
-        if res[0] != "MGMSG_MOT_MOVE_HOMED":
-            pass:
-        return 1,"OK"
- 
-
-
     def request_info(self,*args):
-        log(DEBUG,"MGMSG_HW_REQ_INFO")
-        return self.send_command("MGMSG_HW_REQ_INFO",*args)
+        print("MGMSG_HW_REQ_INFO")
+        print(self.send_command("MGMSG_HW_REQ_INFO",*args))
 
     def get_parameters(self,*args):
         params = ["MGMSG_MOT_REQ_VELPARAMS",
@@ -163,46 +116,43 @@ You didn't and thus aborting
                   "MGMSG_MOT_REQ_MOVERELPARAMS",
                   "MGMSG_MOT_REQ_MOVEABSPARAMS",
                   "MGMSG_MOT_REQ_HOMEPARAMS"]
-        response = {}
         for i in params:
-            log(DEBUG,i)
-            response.update(self.send_command(i,*args))
-        return response 
+            print(i)
+            print(self.send_command(i,*args))
+    
+    def home(self,*args):
+        action="MGMSG_MOT_MOVE_HOME"
+        print(action)
+        print(self.send_command(action,*args))
 
     def get_status(self,*args):
         action="MGMSG_MOT_REQ_STATUSUPDATE"
-        log(DEBUG,action)
-        return self.send_command(action,*args)
+        print(action)
+        print(self.send_command(action,*args))
    
-    def start_update_message(self,*args):
+    def update_message(self,*args):
         action="MGMSG_HW_START_UPDATEMSGS"
-        log(DEBUG,action)
-        self.send_command(action,*args)
-
-    def stop_update_message(self,*args):
-        action="MGMSG_HW_STOP_UPDATEMSGS"
-        log(DEBUG,action)
-        return self.send_command(action,*args)        
+        print(action)
+        print(self.send_command(action,*args))
+        
 
 
 if __name__=="__main__":
     SRC=0x01
     DST=0x50
     
-    #hslts300=Thorlab_device("45897070")
-    #hslts300.request_info(0,0,DST,SRC)
-    #hslts300.get_parameters(0,0,DST,SRC)
-    #hslts300.start_update_message(0,0,DST,SRC)
-    #hslts300.get_status(0,0,DST,SRC)
-    #hslts300.stop_update_message(0,0,DST,SRC)
+    hslts300=Thorlab_device("45897070")
+    hslts300.request_info(0,0,DST,SRC)
+    hslts300.get_parameters(0,0,DST,SRC)
+    hslts300.update_message(0,0,DST,SRC)
+    hslts300.get_status(0,0,DST,SRC)
 
     #serial_number = "45839057"
     lts300=Thorlab_device("45839057")
     lts300.request_info(0,0,DST,SRC)
     lts300.get_parameters(0,0,DST,SRC)
-    lts300.start_update_message(0,0,DST,SRC)
+    #lts300.update_message(0,0,DST,SRC)
     lts300.get_status(0,0,DST,SRC)
-    lts300.stop_update_message(0,0,DST,SRC)
 
 
 #    home(hslts300,0,0,DST,SRC)

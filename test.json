@@ -1,0 +1,336 @@
+{ 
+    "header" : 
+    [ 
+	{ "field" : "msg_id",  "format" : "word"   },      
+	{ "field" : "param1",  "format" : "uchar"  },
+	{ "field" : "param2",  "format" : "uchar"  },
+	{ "field" : "dest",    "format" : "uchar"  },
+	{ "field" : "source",  "format" : "uchar"  },
+    ],
+    "MGMSG_MOD_IDENTIFY": {   
+	"msg_id"   : "0x0223",
+	"msg_type" : "write"
+    },
+    "MGMSG_HW_REQ_INFO" : {   
+	"msg_id"   : "0x0005",
+	"msg_type" : "write"   
+    }, 
+    "MGMSG_HW_GET_INFO": {
+	"msg_id": "0x0006", 
+	"msg_type" : "read",  
+	"data_structure" : [ 
+            { "field" : "serial_number",                 "format" : "long"    },
+            { "field" : "model_number",                  "format" : "char[8]" },
+            { "field" : "type",                          "format" : "word"    },
+            { "field" : "firmware_version_minor_rev " ,  "format" : "uchar"   }, 
+            { "field" : "firmware_version_interim_rev ", "format" : "uchar"   },
+            { "field" : "firmware_version_major_rev ",   "format" : "uchar"   }, 
+            { "field" : "firmware_version_unused ",      "format" : "uchar"   }, 
+            { "field" : "internal_data",                 "format" : "char[60]"}, 
+            { "field" : "HW Version",                    "format" : "word"    },
+            { "field" : "Mod_state",                     "format" : "word"    },
+            { "field" : "nb_channels",                   "format" : "word"    }
+	]
+    },
+    "MGMSG_MOT_MOVE_HOME":  { 
+	"msg_id"   : "0x0443",
+	"msg_type" : "write"
+    },
+    "MGMSG_MOT_MOVE_HOMED": {
+	"msg_id" : "0x0444",
+	"msg_type" : "read"
+    },
+    "MGMSG_MOT_SET_LIMSWITCHPARAMS": {
+	"msg_id" : "0x423",
+	"msg_type" : "write",
+	"data_structure" : [
+            { "field" : "chan_id",       "format" : "word" },      
+            { "field" : "CW_hardlimit",  "format" : "word" }, 
+            { "field" : "CCW_hardlimit", "format" : "word" }, 
+            { "field" : "CW_softlimit",  "format" : "long" }, 
+            { "field" : "CCW_softlimit", "format" : "long" }, 
+            { "field" : "Limit_mode",    "format" : "word" }
+	]
+    },
+    "MGMSG_MOT_REQ_LIMSWITCHPARAMS": {
+	"msg_id" : "0x0424",
+	"msg_type" : "write"
+    },                                         
+    "MGMSG_MOT_GET_LIMSWITCHPARAMS": {
+	
+	"msg_id" : "0x0425",
+	"msg_type" : "read",                                             
+	"data_structure" : [
+            { "field" : "chan_id",       "format" : "word" },      
+            { "field" : "CW_hardlimit",  "format" : "word" }, 
+            { "field" : "CCW_hardlimit", "format" : "word" }, 
+            { "field" : "CW_softlimit",  "format" : "long" }, 
+            { "field" : "CCW_softlimit", "format" : "long" }, 
+            { "field" : "Limit_mode",    "format" : "word" } 
+	]
+    },
+    
+    "MGMSG_HW_START_UPDATEMSGS": {
+	"msg_id": "0x0011",
+	"msg_type" : "write"
+    },
+    "MGMSG_HW_STOP_UPDATEMSGS": {
+	"msg_id": "0x0012",
+	"msg_type" : "write"
+    },
+    "MGMSG_MOT_REQ_STATUSUPDATE": {
+	"msg_id": "0x0480",
+	"msg_type" : "write"
+    },
+    "MGMSG_MOT_GET_STATUSUPDATE":{
+	"msg_id" : "0x0481",
+	"msg_type" : "read",
+	"data_structure" : [
+            { "field" : "Chan_id",      "format" : "word"  },      
+            { "field" : "Position",     "format" : "long"  }, 
+            { "field" : "EncCount",     "format" : "long"  }, 
+            { "field" : "Status Bits",  "format" : "dword" }, 
+            { "field" : "Chan Ident 2", "format" : "word"  }, 
+            { "field" : "Unused_1",     "format" : "long"  },  
+            { "field" : "Unused_2",     "format" : "long"  },  
+            { "field" : "Unused_3",     "format" : "long"  } 
+	]
+    },
+    "MGMSG_HW_NO_FLASH_PROGRAMMING": {
+	"msg_id": "0x0018",
+	"msg_type" : "write"
+    },
+    "MGMSG_MOD_SET_CHANENABLESTATE": {
+	"msg_id": "0x0210",
+	"msg_type" : "write"
+    },
+    "MGMSG_MOD_REQ_CHANENABLESTATE": {
+	"msg_id": "0x0211",
+	"msg_type" : "write"
+    },
+    "MGMSG_MOD_GET_CHANENABLESTATE":{
+	"msg_id": "0x0212",
+	"msg_type" : "read"
+    },
+    "MGMSG_MOD_SET_POSCOUNTER": {
+	"msg_id": "0x0410",
+	"msg_type" : "write",
+	"data_structure":[
+            { "field" : "Chan_id",  "format" : "word" },      
+            { "field" : "Position", "format" : "long" }
+	]
+    },
+    "MGMSG_MOT_REQ_POSCOUNTER": {
+	"msg_id": "0x0411",
+	"msg_type" : "write"
+    },
+    "MGMSG_MOT_GET_POSCOUNTER":{
+	"msg_id" : "0x0412",
+	"msg_type" : "read",
+	"data_structure" : [
+            { "field" : "chan_id",  "format" : "word" },      
+            { "field" : "Position", "format" : "long" }
+	]
+    },
+    "MGMSGS_MOT_SET_VELPARAMS": {
+	"msg_id" : "0x0413",
+	"msg_type" : "write",
+	"data_structure":[
+            {"field" : "Chan_id"      , "format":"word"},
+            {"field" : "Min_velocity" , "format":"long"},
+            {"field" : "Accel"        , "format":"long"},                                              
+            {"field" : "Max_velocity" , "format":"long"}
+	]
+    },
+    "MGMSGS_MOT_REQ_VELPARAMS": {
+	"msg_id" : "0x0414",
+	"msg_type" : "write"
+    },
+    "MGMSGS_MOT_GET_VELPARAMS":{
+	"msg_id" : "0x0415",
+	"msg_type" : "read",
+	"data_structure":[
+            {"field" : "Chan_id"      , "format":"word"},
+            {"field" : "Min_velocity" , "format":"long"},
+            {"field" : "Accel"        , "format":"long"},                                              
+            {"field" : "Max_velocity" , "format":"long"}
+	]
+    },
+    "MGMSGS_MOT_SET_JOGPARAMS": {
+	"msg_id" : "0x0416",
+	"msg_type" : "write",
+	"data_structure":[
+            {"field" : "Chan_id",          "format":"word" },
+            {"field" : "Jog_mode",         "format":"word" },
+            {"field" : "Jog_step_size",    "format":"long" },
+            {"field" : "Min_velocity",     "format":"long" },
+            {"field" : "Jog_accel",        "format":"long" },                                              
+            {"field" : "Jog_max_velocity", "format":"long" },
+            {"field" : "Jog_stop_mode",    "format":"word" }
+	]
+    },
+    "MGMSGS_MOT_REQ_JOGPARAMS": {
+	"msg_id" : "0x0417",
+	"msg_type" : "write"
+    },
+    "MGMSGS_MOT_GET_JOGPARAMS":{
+	"msg_id" : "0x0418",
+	"msg_type" : "write",
+	"data_structure":[
+            {"field" : "Chan_id",          "format":"word" },
+            {"field" : "Jog_mode",         "format":"word" },
+            {"field" : "Jog_step_size",    "format":"long" },
+            {"field" : "Min_velocity",     "format":"long" },
+            {"field" : "Jog_accel",        "format":"long" },                                              
+            {"field" : "Jog_max_velocity", "format":"long" },
+            {"field" : "Jog_stop_mode",    "format":"word" }
+	]
+    },
+    "MGMSGS_MOT_SET_GENMOVEPARAMS": {
+	"msg_id" : "0x043A",
+	"msg_type" : "write",
+	"data_structure":[
+            {"field" : "Chan_id",           "format":"word" },
+            {"field" : "Backlash_distance", "format":"long" }
+	]
+    },
+    "MGMSGS_MOT_REQ_GENMOVEPARAMS": {
+	"msg_id" : "0x043B" ,
+	"msg_type" : "write"
+    },
+    "MGMSGS_MOT_GET_GENMOVEPARAMS":{
+	"msg_id" : "0x043C",
+	"msg_type" : "read",
+        "data_structure":[
+            {"field" : "Chan_id"          , "format":"word" },
+            {"field" : "Backlash_distance", "format":"long" }
+        ]
+    },
+    "MGMSGS_MOT_SET_MOVERELPARAMS": {
+	"msg_id" : "0x0445",
+	"msg_type" : "write",
+        "data_structure":[
+            {"field" : "Chan_id",           "format":"word"},
+            {"field" : "Relative_distance", "format":"long"}
+        ]
+    },
+    "MGMSGS_MOT_REQ_MOVERELPARAMS": {
+	"msg_id" : "0x0446",
+	"msg_type" : "write"
+    },
+    "MGMSGS_MOT_GET_MOVERELPARAMS":{
+        "msg_id" : "0x0447" ,
+        "msg_type" : "read",
+        "data_structure":[
+            {"field" : "Chan_id",           "format":"word" },
+            {"field" : "Relative_distance", "format":"long" }
+        ]
+    },
+    "MGMSGS_MOT_SET_MOVEABSPARAMS": {
+	"msg_id" : "0x0450",
+	"msg_type" : "write",	
+        "data_structure":[
+            {"field" : "Chan_id",           "format":"word" },
+            {"field" : "Absolute_position", "format":"long" }
+        ]
+    },
+    "MGMSGS_MOT_REQ_MOVEABSPARAMS": {
+	"msg_id" : "0x0451",
+	"msg_type" : "write"
+    },
+    "MGMSGS_MOT_GET_MOVEABSPARAMS": {
+        "msg_id" : "0x0452",
+	"msg_type" : "read",
+        "data_structure":[
+            {"field" : "Chan_id",           "format":"word"},
+            {"field" : "Absolute_position", "format":"long"}
+        ]
+    },                                         
+    "MGMSGS_MOT_SET_HOMEPARAMS": {
+	"msg_id" : "0x0440",
+	"msg_type" : "write",
+        "data_structure":[
+            {"field" : "Chan_id"         , "format":"word" },
+            {"field" : "Home_direction"  , "format":"word" },
+            {"field" : "Limit_switch"    , "format":"word" },
+            {"field" : "Home_Velocity"   , "format":"long" },
+            {"field" : "Offset_distance" , "format":"long" }
+        ]
+    },
+    "MGMSGS_MOT_REQ_HOMEPARAMS": {
+	"msg_id" : "0x0441",
+	"msg_type" : "write"
+    },
+    "MGMSGS_MOT_GET_HOMEPARAMS": { 
+	"msg_id" : "0x0442",
+	"msg_type" : "read",
+        "data_structure":[
+            {"field" : "Chan_id"         , "format":"word" },
+            {"field" : "Home_direction"  , "format":"word" },
+            {"field" : "Limit_switch"    , "format":"word" },
+            {"field" : "Home_Velocity"   , "format":"long" },
+            {"field" : "Offset_distance" , "format":"long" }
+        ]
+    },
+    "MGMSG_MOT_MOVE_RELATIVE": {
+	"msg_id": "0x0448",
+	"msg_type" : "write",
+        "as_long_version" : "true",
+	"data_structure":[
+	    {"field" : "Chan_id",           "format":"word" },
+	    {"field" : "Relative_distance", "format":"long" }
+	]
+    },
+    "MGMSG_MOT_MOVE_COMPLETED" : { 
+	"msg_id":"0x464",
+	"msg_type" : "read",
+        "data_structure" : [
+            { "field" : "chan_id",      "format" : "word"  },      
+            { "field" : "Position",     "format" : "long"  }, 
+            { "field" : "EncCount",     "format" : "long"  }, 
+            { "field" : "Status Bits",  "format" : "dword" }, 
+            { "field" : "Chan Ident 2", "format" : "word"  } 
+        ]
+    },
+    "MGMSG_MOT_MOVE_ABSOLUTE":{
+	"msg_id":"0x453",
+	"msg_type" : "write",
+	"as_long_version":"true",        
+	"data_structure":[
+	    {"field" : "Chan_id",           "format":"word" },
+	    {"field" : "Absolute_position", "format":"long" }
+	]
+    },
+    "MGMSG_MOT_MOVE_JOG" :{
+	"msg_id":"0x046A",
+	"msg_type" : "write"
+    },
+    "MGMSGS_MOT_MOVE_VELOCITY": {
+	"msg_id" : "0x0457",
+	"msg_type" : "write",
+	"data_structure":[
+            {"field" : "Chan_id",           "format":"word" },
+	    {"field" : "Relative_distance", "format":"long" }
+	]
+    },
+    "MGMSGS_MOT_MOVE_STOP" : {
+	"msg_id" : "0x0465",
+	"msg_type" : "write",
+        "data_structure":[
+	    {"field" : "Chan_id",           "format":"word" },
+	    {"field" : "Relative_distance", "format":"long" }
+	]
+    },
+    "MGMSGS_MOT_MOVE_STOPPED": {
+	"msg_id" : "0x0466",
+	"msg_type" : "read",
+        "data_structure" : [
+            { "field" : "chan_id",      "format" : "word"  },      
+            { "field" : "Position",     "format" : "long"  }, 
+            { "field" : "EncCount",     "format" : "long"  }, 
+            { "field" : "Status Bits",  "format" : "dword" }, 
+            { "field" : "Chan Ident 2", "format" : "word"  } 
+        ]
+    }    
+}
+
