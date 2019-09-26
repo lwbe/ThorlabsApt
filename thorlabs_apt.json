@@ -8,12 +8,33 @@
 	    { "field" : "source",  "format" : "uchar"  }
 	]
     },
+    "header_long" : {
+	"data_structure":[ 
+	    { "field" : "msg_id",             "format" : "word"   },      
+	    { "field" : "data_packet_length", "format" : "word"  },
+	    { "field" : "dest",               "format" : "uchar"  },
+	    { "field" : "source",             "format" : "uchar"  }
+	]
+    },
     "MGMSG_MOD_IDENTIFY": {   
 	"msg_id"   : "0x0223"
     },
     "MGMSG_HW_REQ_INFO" : {   
 	"msg_id"   : "0x0005",
 	"msg_type" : "request"
+    }, 
+    "MGMSG_HW_RESPONSE" : {   
+	"msg_id"   : "0x0080",
+	"msg_type" : "read"
+    }, 
+    "MGMSG_HW_RICHRESPONSE" : {   
+	"msg_id"   : "0x0081",
+	"msg_type" : "read",
+	"data_structure" : [ 
+            { "field" : "msg_ident", "format" : "long"    },
+            { "field" : "code",      "format" : "char[8]" },
+            { "field" : "notes",     "format" : "char[64]"}
+	]
     }, 
     "MGMSG_HW_GET_INFO": {
 	"msg_id": "0x0006", 

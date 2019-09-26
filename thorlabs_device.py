@@ -2,6 +2,9 @@ import serial
 import os,sys
 from thorlabs_apt_comm import Thorlabs_apt_communication
 
+"""
+Module containing a class to talk to devices throught the thorlabs_apt_comm module
+"""
 
 
 ERROR = 4
@@ -11,6 +14,14 @@ INFO  = 1
 NONE  = 0
 
 LOG_LEVEL=DEBUG
+
+# parameters for the various stages obtained throught the first two digit of the serial number
+# according to the doc
+
+
+
+
+
 # utility functions
 def log(level,msg):
 
@@ -18,16 +29,37 @@ def log(level,msg):
         print(msg)
 
 
-HSLTS=None
-class Thorlab_device():
-    def __init__(self,serial_number,port=None,baudrate=115200,timeout=10,write=None,read=None):
+# --
+class Thorlabs_device():
+    controllers = { "BSC10x" : {"type":0, "has_channels":True},
+                    "BSC20x" : {"type":1, "has_channels":True},
+                    "LTS300" : {"type":0, "has_channels":False},
+                    "HSLTS300" : {"type":0, "has_channels":False},
+                }
+    stages = [None,"LTS300","DRV014"]
+
+    serial_num_to_device =  {
+        20 : {
+            "type": "Legacy single channel stepper driver",
+            "code": "BSC001",
+        },
+        30 : {
+            "type": "Legacy dual channel stepper driver",
+            "code": "BSC002",
+        },
+        45:{
+            "type": "LTS series",
+            "code": "LTS150/LTS300",
+        },
+    }
+    
+    def __init__(self,controller,stage,serial_number,chan=None,port=None,baudrate=115200,timeout=10,write=None,read=None):
         # if we don't supply write or read command we fallback on serial
         
-        if write == None and read == None:
+        if write == None or read == None:
             # initialize the communication to the write and read commands
             if not port:
                 port = self.find_dev(serial_number)
-            print("talking to port %s for serial number %s" % (port,serial_number))
             if port == None:
                 print("No port found for serial_number %s !!\nABORTING " % serial_number)
                 sys.exit(0)
@@ -50,6 +82,10 @@ You didn't and thus aborting
             sys.exit(0)
 
         self.thor_msg = Thorlabs_apt_communication()
+        device_id = int(str(serial_number)[0:2])
+        if self.serial_num_to_device.get(device_id):
+            print self.serial_num_to_device[device_id]["code"]
+        
 
     def find_dev(self,sn):
         """
@@ -70,8 +106,6 @@ You didn't and thus aborting
     def raw_write(self,keyword,*args):
         need_read , msg = self.thor_msg.create_message(keyword,*args)
         self.write(msg)
-        
-
         return need_read , msg
 
     def send_command(self,keyword,*args):
@@ -106,8 +140,8 @@ You didn't and thus aborting
     # High Level function (user)
 
     def request_info(self,*args):
-        print("MGMSG_HW_REQ_INFO")
-        print(self.send_command("MGMSG_HW_REQ_INFO",*args))
+        log(INFO,"MGMSG_HW_REQ_INFO")
+        log(INFO,self.send_command("MGMSG_HW_REQ_INFO",*args))
 
     def get_parameters(self,*args):
         params = ["MGMSG_MOT_REQ_VELPARAMS",
@@ -117,38 +151,57 @@ You didn't and thus aborting
                   "MGMSG_MOT_REQ_MOVEABSPARAMS",
                   "MGMSG_MOT_REQ_HOMEPARAMS"]
         for i in params:
-            print(i)
-            print(self.send_command(i,*args))
+            log(INFO,i)
+            log(INFO,self.send_command(i,*args))
+
+
+
+
+    def info(self):
+        pass
+
     
     def home(self,*args):
         action="MGMSG_MOT_MOVE_HOME"
-        print(action)
-        print(self.send_command(action,*args))
+        log(INFO,action)
+        log(INFO,self.send_command(action,*args))
 
     def get_status(self,*args):
         action="MGMSG_MOT_REQ_STATUSUPDATE"
-        print(action)
-        print(self.send_command(action,*args))
+        log(INFO,action)
+        log(INFO,self.send_command(action,*args))
    
     def update_message(self,*args):
         action="MGMSG_HW_START_UPDATEMSGS"
-        print(action)
-        print(self.send_command(action,*args))
-        
+        log(INFO,action)
+        log(INFO,self.send_command(action,*args))
+
+    def set_velocity(self,*args):
+        pass
+
+    def set_acceleration(self,*args):
+        pass
+    
+    def move(self,*args):
+        pass
+
+    def get_pos(self):
+        return 0.
+
 
 
 if __name__=="__main__":
     SRC=0x01
     DST=0x50
     
-    hslts300=Thorlab_device("45897070")
+    hslts300=Thorlabs_device("45897070")
     hslts300.request_info(0,0,DST,SRC)
     hslts300.get_parameters(0,0,DST,SRC)
     hslts300.update_message(0,0,DST,SRC)
     hslts300.get_status(0,0,DST,SRC)
 
     #serial_number = "45839057"
-    lts300=Thorlab_device("45839057")
+    lts300=Thorlabs_device("45839057")
     lts300.request_info(0,0,DST,SRC)
     lts300.get_parameters(0,0,DST,SRC)
     #lts300.update_message(0,0,DST,SRC)

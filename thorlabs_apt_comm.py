@@ -23,8 +23,6 @@ command_structure and response structure
   response_structure = [] means there is a response but is only a default header.
 """
 
-
-
 ERROR = 4
 WARN  = 3
 DEBUG = 2
@@ -38,21 +36,24 @@ print_dict=pprint_dict.pprint
 
 # utility functions
 def log(level,msg):
-
     if level <= LOG_LEVEL:
         print(msg)
 
+# --
 def format_msg(msg):
     return("\t%s" % msg.replace("\n","\n\t"))
 
+# --
 def on_warning(msg):
     print("WARN\t:\n %s",format_msg(msg))
 
+# --
 def on_error(msg):
     print(msg)
     print("ERR\t:\n %s\nABORTING !!",format_msg(msg))
     sys.exit(0)
-    
+
+# --    
 def tohex(v):
     try:
         h_v = hex(v)[2:]
@@ -67,9 +68,9 @@ def tohex(v):
 
     return ""
 
-# --
-
+# ---------------------------------------------------------------------------------------------------------------
 class Thorlabs_apt_communication():
+# --
     def __init__(self,filename="thorlabs_apt.json"):
         """
         read jsonfile and set the protocol
@@ -98,12 +99,24 @@ class Thorlabs_apt_communication():
             # do some preparation
         msg_size,msg_pack_string,msg_val_names = self.compute_size_pack_string(self.tac_data["header"]["data_structure"])
         self.tac_data["header"].update({"msg_size":msg_size,
-                                            "msg_pack_string":msg_pack_string,
-                                            "msg_val_names":msg_val_names})
-        
-        # everthing else
-        msg_ids = []
+                                        "msg_pack_string":msg_pack_string,
+                                        "msg_val_names":msg_val_names})
         apt_keys.remove("header")
+
+        # the header_long is used for send commands with data. 
+        if "header_long" not in apt_keys:
+            on_error("no header_long section in json file !!")
+            # do some preparation
+        msg_size,msg_pack_string,msg_val_names = self.compute_size_pack_string(self.tac_data["header_long"]["data_structure"])
+        self.tac_data["header_long"].update({"msg_size":msg_size,
+                                             "msg_pack_string":msg_pack_string,
+                                             "msg_val_names":msg_val_names})
+        apt_keys.remove("header_long")        
+
+        # now will scan for all the msg_id a.k.a keyword in the json file to store the data in a dict and pre compute 
+        # pack strings.
+        msg_ids = []
+
         for k in apt_keys:
             msg_dict = self.tac_data[k]
             msg_keys = msg_dict.keys()
@@ -131,9 +144,11 @@ class Thorlabs_apt_communication():
                 msg_dict["msg_type"]="send"
 
                 if msg_dict["msg_type"] not in available_msg_types:
-                    on_error("Unknown msg_type %s for %s (possible values are %s)" % (msg_dict["msg_type"],
-                                                                                      k,
-                                                                                      ", ".join(available_msg_types)))
+                    on_error("Unknown msg_type %s for %s (possible values are %s)" % 
+                             (msg_dict["msg_type"],
+                              k,
+                              ", ".join(available_msg_types))
+                    )
             else:
                 msg_keys.remove("msg_type")
 
@@ -145,13 +160,17 @@ class Thorlabs_apt_communication():
                 for data in ds:
                     for dk in data.keys():
                         if dk not in available_data_structure_keys:
-                            on_error("Unknown data_structure key %s for %s (possible values are %s)" % (dk,
-                                                                                                        k,
-                                                                                                        ", ".join(available_data_structure_keys)))
-                if data["format"] not in available_data_format:
-                       on_error("Unknown data_format %s for %s (possible values are %s)" % (data["format"],
-                                                                                            k,
-                                                                                            ", ".join(available_data_format)))
+                            on_error("Unknown data_structure key %s for %s (possible values are %s)" % 
+                                     (dk,
+                                      k,
+                                      ", ".join(available_data_structure_keys))
+                            )
+                if data["format"].split('[')[0] not in available_data_format:
+                    on_error("Unknown data_format %s for %s (possible values are %s)" % 
+                             (data["format"],
+                              k,
+                              ", ".join(available_data_format))
+                    )
 
                 # do some preparation
                 msg_size,msg_pack_string,msg_val_names = self.compute_size_pack_string(ds)
@@ -166,8 +185,14 @@ class Thorlabs_apt_communication():
                     on_error("Unknown key %s for %s (possible values are %s)" % (left_keys,
                                                                                  k,
                                                                                  ", ".join(available_msg_keys)))
-                    
             
+        log(DEBUG,"keys are:")
+        for k in self.tac_data.keys():
+            if k.startswith("MGMSG_"):
+                log(DEBUG,"%s" % (k))
+                log(DEBUG,"\t\t%s" % (self.tac_data[k]["msg_id"]))
+
+# --            
     def compute_size_pack_string(self,data_to_scan):
 
         _length = 0
@@ -211,6 +236,7 @@ class Thorlabs_apt_communication():
             log(DEBUG,"type : %s field_name %s total lentgh %d" % (d["format"],d["field"],_length))
         return _length,pack_string,val_names
 
+# --
     def get_keyword_data(self,keyword):
         if keyword not in self.tac_data:
             on_error("Keyword %s not found available keywords are: %s" % (keyword,
@@ -218,24 +244,31 @@ class Thorlabs_apt_communication():
             sys.exit(0)
         return self.tac_data[keyword]
     
-
+# --
     def create_message(self,*args):
-        d = self.get_keyword_data(args[0])
         
-        pack_string="<"+self.tac_data["header"]["msg_pack_string"]+d["msg_pack_string"]
-        expected_names=self.tac_data["header"]["msg_val_names"] + d["msg_val_names"]
-        nb_args=len(expected_names)
+        d = self.get_keyword_data(args[0])
+        if d["msg_size"] == 0:
+            header_type="header"
+        else:
+            header_type="header_long"
+
+        pack_string = "<"+self.tac_data[header_type]["msg_pack_string"]+d["msg_pack_string"]
+        expected_names = self.tac_data[header_type]["msg_val_names"] + d["msg_val_names"]
+        nb_args = len(expected_names)
+
+        if nb_args > 6:   # we are going to send a long message and thus modify the arguments
+                          # may be it should be done by the user.
+            args = list(args)   # *args give a tuple not a list
+            args[3] = args[3] | 0x80
+            args = [args[0]] + [d['msg_size']] + args[3:]
 
         if nb_args != len(args):
-            err_msg="the number of args supplied is not equal to the expected one\n"  
-            err_msg+="args supplied : %s" % ("\n\t".join(args))
-            err_msg+="args expected : %s" % ("\n\t".join(expected_names))
+            err_msg = "the number of args supplied %d is not equal to the expected one %d\n" % (len(args),len(expected_names))  
+            err_msg += "args supplied : %s\n" % ("\n\t".join([str(i) for i in args]))
+            err_msg += "args expected : %s" % ("\n\t".join(expected_names))
             on_error(err_msg)
             
-        if nb_args > 6:
-            if (args[3] >> 7) != 1:   
-                on_error("Asking for a long message but bit 7 of the 4 argument is not set to one")
-
         try:
             msg = struct.pack(pack_string ,d["msg_id"],*args[1:])
         except struct.error as e:
@@ -247,39 +280,45 @@ class Thorlabs_apt_communication():
 
         return d["msg_type"],msg
 
+# --
     def read_message(self,keyword,msg):
+        """
+        read the full message (header included
+        """
         d=self.get_keyword_data(keyword)
         pack_string="<"+self.tac_data["header"]["msg_pack_string"]+d["msg_pack_string"]
         msg_val_names=self.tac_data["header"]["msg_val_names"]+d["msg_val_names"]
         try:
             unpack_msg = struct.unpack(pack_string,msg)
+            log(DEBUG,"unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
         except struct.error as e:
-            print("Error : %s pack_string %s msg %s " % (e,p,msg))
-            print("Mismatch between definition and what's received we expect %s " %  (", ".join(val_names)))
+            print("Error : %s pack_string %s msg %s " % (e,pack_string,msg))
+            print("Mismatch between definition and what's received we expect %s " %  (", ".join(msg_val_names)))
             print("msg received: %s (%s)" % (msg,tohex(msg)))
-            debug("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
+            
         return dict([(i,j) for i,j in zip(msg_val_names,unpack_msg)])
 
-    def print_message(self,unpack_msg):            
-        d=self.get_keyword_data(keyword)
-        pack_string="<"+self.tac_data["header"]["msg_pack_string"]+d["msg_pack_string"]
-        msg_val_names=self.tac_data["header"]["msg_val_names"]+d["msg_val_names"]
+# --
+    def is_valid_header(self,msg):
+        if not msg:
+            print("Error: nothing to analyse, is there a communication problem!!")
+            return
+        pack_string="<"+self.tac_data["header"]["msg_pack_string"]
         try:
             unpack_msg = struct.unpack(pack_string,msg)
-        except struct.error as e:
-            print("Error : %s pack_string %s msg %s " % (e,p,msg))
-            print("Mismatch between definition and what's received we expect %s " %  (", ".join(val_names)))
-            print("msg received: %s (%s)" % (msg,tohex(msg)))
-            debug("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
-
-        return_msg="\tmsg_id %s (%s) %s\n\t" % (unpack_msg[0],unpack_msg[0],keyword)
-        return_msg+="\n\t".join(["%s : %s (%s) "% (i,j,tohex(j)) for i,j in zip(msg_val_names[1:],unpack_msg[1:])])
-        return return_msg
-
-
-        
-
+            if unpack_msg[0] in  self.msg_id_to_keyword: 
+                keyword = self.msg_id_to_keyword[unpack_msg[0]]
+                d = self.get_keyword_data(keyword)
+                return True
+            return False
+        except:
+            return False
+            
+# --
     def read_header(self,msg):
+        if not msg:
+            print("Error: nothing to analyse, is there a communication problem!!")
+            return
         pack_string="<"+self.tac_data["header"]["msg_pack_string"]
         try:
             unpack_msg = struct.unpack(pack_string,msg)
@@ -287,7 +326,7 @@ class Thorlabs_apt_communication():
             print("Error : %s pack_string %s msg %s " % (e,pack_string,msg))
             print("Mismatch between definition and what's received we expect %s " %  (", ".join(val_names)))
             print("msg received: %s (%s)" % (msg,tohex(msg)))
-            debug("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
+            log("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
 
         if unpack_msg[0] in  self.msg_id_to_keyword: 
             keyword = self.msg_id_to_keyword[unpack_msg[0]]
@@ -302,7 +341,8 @@ if __name__=="__main__":
     #print_dict(t.tac_data)
 
     r,msg = t.create_message("MGMSG_HW_REQ_INFO",0,0,0x1,0x50)
-
     print("%s %s" %(r,msg))
 
+    r,msg = t.create_message("MGMSG_MOT_SET_LIMSWITCHPARAMS",0,0,0x1,0x50,1,2,3,4,5,6)
+    print("%s %s" %(r,msg))
 
