@@ -257,7 +257,7 @@ class Thorlabs_apt_communication():
         expected_names = self.tac_data[header_type]["msg_val_names"] + d["msg_val_names"]
         nb_args = len(expected_names)
 
-        if nb_args > 6:   # we are going to send a long message and thus modify the arguments
+        if nb_args > 5:   # we are going to send a long message and thus modify the arguments
                           # may be it should be done by the user.
             args = list(args)   # *args give a tuple not a list
             args[3] = args[3] | 0x80

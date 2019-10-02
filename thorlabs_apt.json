@@ -126,7 +126,7 @@
 	"msg_id": "0x0212",
 	"msg_type" : "read"
     },
-    "MGMSG_MOD_SET_POSCOUNTER": {
+    "MGMSG_MOT_SET_POSCOUNTER": {
 	"msg_id": "0x0410",
 	"data_structure":[
             { "field" : "Chan_id",  "format" : "word" },      
@@ -291,11 +291,11 @@
 	"msg_id":"0x464",
 	"msg_type" : "read",
         "data_structure" : [
-            { "field" : "chan_id",      "format" : "word"  },      
-            { "field" : "Position",     "format" : "long"  }, 
-            { "field" : "EncCount",     "format" : "long"  }, 
-            { "field" : "Status Bits",  "format" : "dword" }, 
-            { "field" : "Chan Ident 2", "format" : "word"  } 
+            { "field" : "Chan_id",    "format" : "word"  },      
+            { "field" : "Position",   "format" : "long"  }, 
+            { "field" : "Velocity",   "format" : "word"  }, 
+            { "field" : "Reserved",   "format" : "word" }, 
+            { "field" : "Status_bit", "format" : "dword"  } 
         ]
     },
     "MGMSG_MOT_MOVE_ABSOLUTE":{
@@ -310,28 +310,20 @@
 	"msg_id":"0x046A"
     },
     "MGMSG_MOT_MOVE_VELOCITY": {
-	"msg_id" : "0x0457",
-	"data_structure":[
-            {"field" : "Chan_id",           "format":"word" },
-	    {"field" : "Relative_distance", "format":"long" }
-	]
+	"msg_id" : "0x0457"
     },
     "MGMSG_MOT_MOVE_STOP" : {
-	"msg_id" : "0x0465",
-        "data_structure":[
-	    {"field" : "Chan_id",           "format":"word" },
-	    {"field" : "Relative_distance", "format":"long" }
-	]
+	"msg_id" : "0x0465"
     },
     "MGMSG_MOT_MOVE_STOPPED": {
 	"msg_id" : "0x0466",
 	"msg_type" : "read",
         "data_structure" : [
-            { "field" : "chan_id",      "format" : "word"  },      
-            { "field" : "Position",     "format" : "long"  }, 
-            { "field" : "EncCount",     "format" : "long"  }, 
-            { "field" : "Status Bits",  "format" : "dword" }, 
-            { "field" : "Chan Ident 2", "format" : "word"  } 
+            { "field" : "Chan_id",    "format" : "word"  },      
+            { "field" : "Position",   "format" : "long"  }, 
+            { "field" : "Velocity",   "format" : "word"  }, 
+            { "field" : "Reserved",   "format" : "word" }, 
+            { "field" : "Status_bit", "format" : "dword"  } 
         ]
     }    
 }

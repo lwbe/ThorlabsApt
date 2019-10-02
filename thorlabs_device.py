@@ -13,7 +13,7 @@ DEBUG = 2
 INFO  = 1
 NONE  = 0
 
-LOG_LEVEL=DEBUG
+LOG_LEVEL=INFO
 
 # parameters for the various stages obtained throught the first two digit of the serial number
 # according to the doc
@@ -31,11 +31,25 @@ def log(level,msg):
 
 # --
 class Thorlabs_device():
-    controllers = { "BSC10x" : {"type":0, "has_channels":True},
-                    "BSC20x" : {"type":1, "has_channels":True},
-                    "LTS300" : {"type":0, "has_channels":False},
-                    "HSLTS300" : {"type":0, "has_channels":False},
-                }
+    controllers = { 
+
+        "BSC10x" :   {
+            "type":0, 
+            "has_channels":True
+        },
+        "BSC20x" :   {
+            "type":1, 
+            "has_channels":True
+        },
+        "LTS300" :   {
+            "type":0, 
+            "has_channels":False
+        },
+        "HSLTS300" : {
+            "type":1, 
+            "has_channels":False},
+    }
+
     stages = [None,"LTS300","DRV014"]
 
     serial_num_to_device =  {
@@ -84,8 +98,8 @@ You didn't and thus aborting
         self.thor_msg = Thorlabs_apt_communication()
         device_id = int(str(serial_number)[0:2])
         if self.serial_num_to_device.get(device_id):
-            print self.serial_num_to_device[device_id]["code"]
-        
+            #print self.serial_num_to_device[device_id]["code"]
+            pass
 
     def find_dev(self,sn):
         """
