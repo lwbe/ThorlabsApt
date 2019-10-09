@@ -107,30 +107,29 @@ class Thorlabs_device():
 
         # thorlabs communication protocal
         self.thor_msg = Thorlabs_apt_communication()
-
-# --
-    def configure(self):
-
         self.set_controller_and_stage()
-        # extract the data for the controller and stage and set them
-
-        self.no_flash_programming()
-        self.stop_update_msg()
-        self.get_info()
-        self.bay_used()
-        self.enable()
-        self.set_limitswitch_params()
-        self.get_status_update()
-        self.set_velocity_params()
-
-
         # min and max position
         self.pos_min = self.stage["min pos"]
         self.pos_max = self.stage["max pos"]
 
-        # speed and power
-        self.power_rest = self.stage["rest factor"]
-        self.power_move = self.stage["move factor"]
+
+# --
+    def configure(self):
+        """
+        configure the device
+        """
+        self.no_flash_programming()
+        self.stop_update_msg()
+        self.get_info()
+        #self.bay_used()
+        self.enable()
+        self.set_limitswitchparams()
+        self.get_status_update()
+        self.set_velparams()
+        self.set_homeparams()
+        self.set_poweparams()
+
+
 
 # --
     def set_controller_and_stage(self):
@@ -249,11 +248,11 @@ class Thorlabs_device():
 # -- 
     @send
     def stop_update_msg(self):
-        return ("MGMSG_HW_STOP_UPDATEMSGS",self.channel,0,self.destination,self.source)
+        return ("MGMSG_HW_STOP_UPDATEMSGS",self.channel,0,self.destination_controller,self.source)
 # --
     @send 
     def start_update_msg(self):
-        return ("MGMSG_HW_START_UPDATEMSGS",self.channel,0,self.destination,self.source)
+        return ("MGMSG_HW_START_UPDATEMSGS",self.channel,0,self.destination_controller,self.source)
 # --
     @send
     def enable(self):
@@ -264,7 +263,7 @@ class Thorlabs_device():
         return ("MGMSG_MOD_SET_CHANENABLESTATE",self.channel,2,self.destination,self.source)
 # --
     @send
-    def set_home_params(self):
+    def set_homeparams(self):
         return ("MGMSG_MOT_SET_HOMEPARAMS",0,self.destination,self.source,
                 self.channel, 
                 int(self.stage["home dir"]),
@@ -273,11 +272,33 @@ class Thorlabs_device():
                 int(float(self.stage["home zero offset"])*self.ustep_to_pos))
 # --
     @send
-    def get_home_params(self):
+    def get_homeparams(self):
         return ("MGMSG_MOT_REQ_HOMEPARAMS",self.channel,0,self.destination,self.source)
 # --
     @send
-    def set_limitswitch_params(self):
+    def set_velparams(self):
+        return ("MGMSG_MOT_SET_VELPARAMS",0,self.destination,self.source,
+                self.channel,
+                 0, #int(float(self.stage["def min vel"])*self.ustep_to_vel),
+                int(0.5*float(self.stage["max accn"])*self.ustep_to_acc),
+                int(0.5*float(self.stage["max vel"])*self.ustep_to_vel)
+            )
+# --
+    @send
+    def set_velparams_max(self):
+        return ("MGMSG_MOT_SET_VELPARAMS",0,self.destination,self.source,
+                self.channel,
+                 0, #int(float(self.stage["def min vel"])*self.ustep_to_vel),
+                int(float(self.stage["max accn"])*self.ustep_to_acc),
+                int(float(self.stage["max vel"])*self.ustep_to_vel)
+            )
+# --
+    @send
+    def get_velparams(self):
+        return ("MGMSG_MOT_REQ_VELPARAMS",self.channel,0,self.destination,self.source)
+# --
+    @send
+    def set_limitswitchparams(self):
         return ("MGMSG_MOT_SET_LIMSWITCHPARAMS", 0, self.destination, self.source,
                 self.channel,
                 int(self.stage["cw hard limit"]),
@@ -287,12 +308,24 @@ class Thorlabs_device():
                 int(self.stage["soft limit mode"]))
 # --
     @send
-    def get_limitswitch_params(self):
+    def get_limitswitchparams(self):
         return ("MGMSG_MOT_REQ_LIMSWITCHPARAMS", self.channel, 0, self.destination, self.source)
 # --
     @send
+    def set_powerparams(self):
+        return d("MGMSG_MOT_SET_POWERPARAMS",0,self.destination,self.source,
+                 self.channel,
+                 int(self.stage["rest factor"])
+                 int(self.stage["move factor"]))
+# --
+    @send
+    def get_powerparams(self):
+        return d("MGMSG_MOT_REQ_POWERPARAMS",self.channel,0,self.destination,self.source)
+# --
+    @send
     def get_info(self):
-        return ("MGMSG_HW_REQ_INFO",0,0,self.destination,self.source)
+        return ("MGMSG_HW_REQ_INFO",0,0,self.destination_controller
+,self.source)
 # --
     @send
     def bay_used(self):
@@ -307,11 +340,6 @@ class Thorlabs_device():
     @send
     def home(self):
             return ("MGMSG_MOT_MOVE_HOME",self.channel,0,self.destination,self.source)
-# --
-    @send
-    def move_relative(self,distance):
-        return ("MGMSG_MOT_MOVE_RELATIVE",self.channel,0,self.destination,self.source,
-                1,int(distance*self.ustep_to_pos))
 
 # --
     @send
@@ -323,10 +351,22 @@ class Thorlabs_device():
     def get_position(self):
         d=self.get_poscounter()
         return d
+# --
+
+    def move_relative(self,distance):
+        self.send_command("MGMSG_MOT_MOVE_RELATIVE",0,self.destination,self.source,
+                1,int(distance*self.ustep_to_pos))
+
+
+
+
+
 
 if __name__=="__main__":
-    d = Thorlabs_device("40828799","BSC10x","17DRV014 Enc LNR 50mm",1)
-                
+    d1 = Thorlabs_device("40828799","BSC10x","17DRV014 Enc LNR 50mm",1)
+    d2 = Thorlabs_device("70854298","BSC20x","17DRV014 Enc LNR 50mm",1)
+    d3 = Thorlabs_device("45839057","LTS300","LTS300 300mm Stage")
+
     #hslts300=Thorlabs_device("45897070")
     #hslts300.request_info(0,0,DST,SRC)
     #hslts300.get_parameters(0,0,DST,SRC)
