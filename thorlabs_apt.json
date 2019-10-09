@@ -16,6 +16,9 @@
 	    { "field" : "source",             "format" : "uchar"  }
 	]
     },
+    "MGMSG_HW_NO_FLASH_PROGRAMMING": {   
+	"msg_id"   : "0x0018"
+    },
     "MGMSG_MOD_IDENTIFY": {   
 	"msg_id"   : "0x0223"
     },
@@ -53,6 +56,15 @@
             { "field" : "nb_channels",                   "format" : "word"    }
 	]
     },
+    "MGMSG_RACK_REQ_BAYUSED":{
+	"msg_id":"0x0060",
+	"msg_type":"request"
+    },
+    "MGMSG_RACK_GET_BAYUSED":{
+	"msg_id":"0x0061",
+	"msg_type" : "read"
+    },
+
     "MGMSG_MOT_MOVE_HOME":  { 
 	"msg_id"   : "0x0443"
     },
@@ -325,6 +337,40 @@
             { "field" : "Reserved",   "format" : "word" }, 
             { "field" : "Status_bit", "format" : "dword"  } 
         ]
+    },
+    "MGMSG_MOT_SET_POWERPARAMS":{
+	"msg_id" : "0x0426",
+        "data_structure" : [
+            { "field" : "Chan_id",    "format" : "word"  },      
+            { "field" : "RestFactor", "format" : "word"  }, 
+            { "field" : "MoveFactor", "format" : "word"  } 
+        ]
+    },    
+    "MGMSG_MOT_REQ_POWERPARAMS":{
+	"msg_id" : "0x0427",
+	"msg_type": "request"
+    },    
+    "MGMSG_MOT_GET_POWERPARAMS":{
+	"msg_id" : "0x0428",
+	"msg_type": "read",
+        "data_structure" : [
+            { "field" : "Chan_id",    "format" : "word"  },      
+            { "field" : "RestFactor", "format" : "word"  }, 
+            { "field" : "MoveFactor", "format" : "word"  } 
+        ]
+    },   
+    "MGMSG_MOT_REQ_ADCINPUTS":{
+	"msg_id" : "0x042B",
+	"msg_type": "request"	
+    },    
+    "MGMSG_MOT_GET_ADCINPUTS":{
+	"msg_id" : "0x042C",
+	"msg_type": "read",	
+        "data_structure" : [
+            { "field" : "ADCInput1", "format" : "word"  },      
+            { "field" : "ADCInput2", "format" : "word"  } 
+        ]
     }    
+
 }
 

@@ -186,9 +186,11 @@ class Thorlabs_apt_communication():
                                                                                  k,
                                                                                  ", ".join(available_msg_keys)))
             
+        self.msg_id_to_keyword={}
         log(DEBUG,"keys are:")
-        for k in self.tac_data.keys():
+        for k in self.tac_data:
             if k.startswith("MGMSG_"):
+                self.msg_id_to_keyword[self.tac_data[k]["msg_id"]] = k
                 log(DEBUG,"%s" % (k))
                 log(DEBUG,"\t\t%s" % (self.tac_data[k]["msg_id"]))
 
@@ -238,45 +240,93 @@ class Thorlabs_apt_communication():
 
 # --
     def get_keyword_data(self,keyword):
-        if keyword not in self.tac_data:
-            on_error("Keyword %s not found available keywords are: %s" % (keyword,
+        """
+        keyword may be the string or the msg_id
+        """
+        if keyword not in self.tac_data and keyword not in self.msg_id_to_keyword:
+            on_error("Keyword %s not found available keywords are: \n\t%s" % (keyword,
                                                                           "\n\t".join(self.tac_data.keys())))
             sys.exit(0)
+        if keyword in self.msg_id_to_keyword:
+            # we received a msg_id instead so we get the keyword
+            keyword=self.msg_id_to_keyword[keyword]
+
         return self.tac_data[keyword]
     
+
+#-- 
+    def create_message(self,*args,**kwargs):
+        if args:
+            return self.create_message_from_list(*args)
+        elif kwargs:
+            return self.create_message_from_dict(**kwargs)
+
 # --
-    def create_message(self,*args):
-        
-        d = self.get_keyword_data(args[0])
-        if d["msg_size"] == 0:
+    def create_message_from_dict(self,**kwargs):
+        # first we get the information about the message
+        d = self.get_keyword_data(kwargs["msg"])
+        params = [d["msg_id"]] 
+        if d["msg_size"] == 0:    # we have a simple message
+            params.append(kwargs["param1"])
+            params.append(kwargs.get("param2") if kwargs.get("param2") else 0 )
+            params.append(kwargs["destination"])
             header_type="header"
         else:
+            params.append(d["msg_size"])
+            params.append(kwargs["destination"]  | 0x80)
+            for k in d["msg_val_names"]:
+                params.append(kwargs[k])
             header_type="header_long"
 
+        params.append(kwargs["source"])
+
+        # creating the pack string
         pack_string = "<"+self.tac_data[header_type]["msg_pack_string"]+d["msg_pack_string"]
         expected_names = self.tac_data[header_type]["msg_val_names"] + d["msg_val_names"]
-        nb_args = len(expected_names)
 
-        if nb_args > 5:   # we are going to send a long message and thus modify the arguments
-                          # may be it should be done by the user.
-            args = list(args)   # *args give a tuple not a list
-            args[3] = args[3] | 0x80
-            args = [args[0]] + [d['msg_size']] + args[3:]
-
-        if nb_args != len(args):
-            err_msg = "the number of args supplied %d is not equal to the expected one %d\n" % (len(args),len(expected_names))  
-            err_msg += "args supplied : %s\n" % ("\n\t".join([str(i) for i in args]))
-            err_msg += "args expected : %s" % ("\n\t".join(expected_names))
-            on_error(err_msg)
-            
+        # creating the message
         try:
-            msg = struct.pack(pack_string ,d["msg_id"],*args[1:])
+            msg = struct.pack(pack_string ,*params)
         except struct.error as e:
             err_msg = "Error : %s with pack_strings %s and args %s\n" % (e,pack_string,tohex(d["msg_id"])+str(args[1:]))
             err_msg += "Expected arguments are: %s"% (", ".join(expected_names))
             on_error(err_msg)
-
         log(INFO,"msg sent: %s (%s)" % (msg,tohex(msg)))
+        return d["msg_type"],msg
+
+    
+# --
+    def create_message_from_list(self,*args):
+
+        params=list(args)
+        d = self.get_keyword_data(args[0])
+        params[0] = d["msg_id"]
+
+        if d["msg_size"] == 0:
+            header_type="header"
+        else:
+            params[1]=d["msg_size"]
+            params[2] = args[2] | 0x80
+            header_type="header_long"
+
+        pack_string = "<"+self.tac_data[header_type]["msg_pack_string"]+d["msg_pack_string"]
+        expected_names = self.tac_data[header_type]["msg_val_names"] + d["msg_val_names"]
+
+
+        if len(expected_names) != len(params):
+            err_msg = "the number of args supplied %d is not equal to the expected one %d\n" % (len(params),len(expected_names))  
+            err_msg += "args supplied : %s\n" % ("\n\t".join([str(i) for i in params]))
+            err_msg += "args expected : %s" % ("\n\t".join(expected_names))
+            on_error(err_msg)
+            
+        try:
+            msg = struct.pack(pack_string ,*params)
+        except struct.error as e:
+            err_msg = "Error : %s with pack_strings %s and args %s\n" % (e,pack_string,tohex(d["msg_id"])+str(params[1:]))
+            err_msg += "Expected arguments are: %s"% (", ".join(expected_names))
+            on_error(err_msg)
+
+        log(INFO,"msg sent: %s (%s) params : %s" % (msg,tohex(msg),str(params)))
 
         return d["msg_type"],msg
 
