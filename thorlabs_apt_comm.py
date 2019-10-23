@@ -293,8 +293,6 @@ class Thorlabs_apt_communication():
             on_error(err_msg)
         log(INFO,"msg sent: %s (%s)" % (msg,tohex(msg)))
         return d["msg_type"],msg
-
-    
 # --
     def create_message_from_list(self,*args):
 
@@ -311,7 +309,6 @@ class Thorlabs_apt_communication():
 
         pack_string = "<"+self.tac_data[header_type]["msg_pack_string"]+d["msg_pack_string"]
         expected_names = self.tac_data[header_type]["msg_val_names"] + d["msg_val_names"]
-
 
         if len(expected_names) != len(params):
             err_msg = "the number of args supplied %d is not equal to the expected one %d\n" % (len(params),len(expected_names))  
@@ -333,7 +330,7 @@ class Thorlabs_apt_communication():
 # --
     def read_message(self,keyword,msg):
         """
-        read the full message (header included
+        read the full message (header included) and return a dict
         """
         d=self.get_keyword_data(keyword)
         pack_string="<"+self.tac_data["header"]["msg_pack_string"]+d["msg_pack_string"]

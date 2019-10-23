@@ -124,6 +124,18 @@
             { "field" : "Unused_3",     "format" : "long"  } 
 	]
     },
+    "MGMSG_MOT_REQ_STATUSBITS": {
+	"msg_id": "0x0429",
+	"msg_type": "request"
+    },
+    "MGMSG_MOT_GET_STATUSBITS":{
+	"msg_id" : "0x042A",
+	"msg_type" : "read",
+	"data_structure" : [
+            { "field" : "Chan_id",      "format" : "word"  },      
+            { "field" : "Status Bits",  "format" : "dword" }
+	]
+    },
     "MGMSG_HW_NO_FLASH_PROGRAMMING": {
 	"msg_id": "0x0018"
     },
