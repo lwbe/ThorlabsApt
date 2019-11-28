@@ -390,6 +390,6 @@ if __name__=="__main__":
     r,msg = t.create_message("MGMSG_HW_REQ_INFO",0,0,0x1,0x50)
     print("%s %s" %(r,msg))
 
-    r,msg = t.create_message("MGMSG_MOT_SET_LIMSWITCHPARAMS",0,0,0x1,0x50,1,2,3,4,5,6)
+    r,msg = t.create_message("MGMSG_MOT_SET_LIMSWITCHPARAMS",0,0x1,0x50,1,2,3,4,5,6)
     print("%s %s" %(r,msg))
 
