@@ -268,7 +268,6 @@ class Thorlabs_device():
 
         self.read_response() # to flush the msg queue
 
-        print self.thor_msg.msg_id_to_keyword[msg_id]
         return msg_id
         
     #def read_update_msg(self):
