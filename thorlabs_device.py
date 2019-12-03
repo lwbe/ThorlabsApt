@@ -5,7 +5,7 @@ import os,sys,time
 import ConfigParser as configparser
 
 stages_file="MG17APTServer.ini"
-
+SERIAL_TIMEOUT=10
 from thorlabs_apt_comm import Thorlabs_apt_communication
 
 
@@ -75,13 +75,14 @@ class Thorlabs_device():
                  chan=None,
                  port=None,
                  baudrate=115200,
-                 timeout=10,
+                 timeout=SERIAL_TIMEOUT,
                  write=None,
                  read=None):
         # if we don't supply write or read command we fallback on serial
         self.controller_name = controller_name
         self.stage_name = stage_name
         self.channel = chan
+        self.thor_dev=None
 
         if write == None and read == None:
             # initialize the communication to the write and read commands
@@ -91,9 +92,9 @@ class Thorlabs_device():
                 print("No port found for serial_number %s !!\nABORTING " % serial_number)
                 sys.exit(0)
 
-            thor_dev = serial.Serial(port,baudrate=baudrate,timeout=timeout)
-            self.write = thor_dev.write
-            self.read =  thor_dev.read
+            self.thor_dev = serial.Serial(port,baudrate=baudrate,timeout=timeout)
+            self.write = self.thor_dev.write
+            self.read =  self.thor_dev.read
         else: 
             if write and read:
                 self.write, self.read = write, read
@@ -169,7 +170,11 @@ class Thorlabs_device():
         """
         self.no_flash_programming()
         self.stop_update_msg()
-        
+        # flush the communication
+        if self.thor_dev:
+            self.thor_dev.timeout=1
+            self.read(1000)
+            self.thor_dev.timeout=SERIAL_TIMEOUT
         self.get_info()
         #self.bay_used()
         self.enable()

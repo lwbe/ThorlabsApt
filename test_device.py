@@ -6,6 +6,7 @@ from thorlabs_device import Thorlabs_device
 import pprint
 
 d1 = Thorlabs_device("40828799","BSC10x","17DRV014 Enc LNR 50mm",1)
+d1.configure()
 pprint.pprint(d1.get_info())
 
 
