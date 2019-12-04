@@ -181,7 +181,7 @@ class Thorlabs_device():
         self.set_limitswitchparams()
 
         #self.start_update_msg()
-        #self.get_status_update()
+        self.get_status_update()
         #self.stop_update_msg()
 
         self.set_velparams()
@@ -251,19 +251,24 @@ class Thorlabs_device():
         This method check the statusbit and the position and ends when one of the completed movement msgid is received 
         """
         msg_id=""
-        
-        while msg_id not in self.completed_keys:
+        is_completed = False
+        while not is_completed: # msg_id not in self.completed_keys:
             # the status bit
             d = self.get_statusbits()
             print("status bits :",d)
             if d.get("Status Bits"):
+                status_bits=self.extract_status_information(d["Status Bits"])
                 print("status bits (%d): %s" % ( d["Status Bits"],
-                                                 str(self.extract_status_information(d["Status Bits"]))
-                                             )
-                  )
+                                                 str(status_bits))
+                )
 
+                if status_bits['moving forward'] == 0 and status_bits['moving reverse']== 0:
+                    is_completed = True
+ 
             msg_id=d["msg_id"]
             if msg_id not in self.completed_keys:
+                print("------> ",msg_id,d)
+                
                 d = self.get_poscounter()
                 print("pos counter ",d)
                 if d.get("Position"):
@@ -271,7 +276,7 @@ class Thorlabs_device():
                 msg_id=d["msg_id"]
             time.sleep(0.5)
 
-        self.read_response() # to flush the msg queue
+        #self.read_response() # to flush the msg queue
 
         return msg_id
         
