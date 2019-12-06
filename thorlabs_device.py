@@ -318,6 +318,10 @@ class Thorlabs_device():
 
 # --
     @send
+    def mod_identify(self):
+        return ("MGMSG_MOD_IDENTIFY",0,0,self.destination,self.source)
+# --
+    @send
     def no_flash_programming(self):
         return ("MGMSG_HW_NO_FLASH_PROGRAMMING",0,0,self.destination_controller,self.source)
 # -- 
