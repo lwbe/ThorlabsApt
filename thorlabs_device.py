@@ -197,6 +197,9 @@ class Thorlabs_device():
         for r, d, f in os.walk(path):
             for i in f:
                 if sn in i and os.path.islink(os.path.join(path,i)):
+                    log(INFO,"Found device %s for serial number %s" %
+                        (os.path.realpath(os.path.join(path,i)),sn))
+                    
                     return os.path.realpath(os.path.join(path,i))
         return None
 # --
@@ -248,34 +251,46 @@ class Thorlabs_device():
 # --
     def wait_until_completed(self):
         """
-        This method check the statusbit and the position and ends when one of the completed movement msgid is received 
+        This method check the statusbit and the position and ends when one of the completed movement 
+        msgid is received of the stage indicates that it doesn't move forward or reverse. 
         """
         msg_id=""
         is_completed = False
         while not is_completed: # msg_id not in self.completed_keys:
-            # the status bit
+            # we query the status bits
             d = self.get_statusbits()
-            print("status bits :",d)
+            log(INFO, "get_statusbit return value (expected msgid=1066):  %s "%str(d))
+
+            # some stage return a completed message when the stage arrived to the position
+            # while some other don't.
+            # first we check if we have a Status Bit entry 
             if d.get("Status Bits"):
                 status_bits=self.extract_status_information(d["Status Bits"])
-                print("status bits (%d): %s" % ( d["Status Bits"],
+                log(INFO,"status bits (%d): %s" % ( d["Status Bits"],
                                                  str(status_bits))
                 )
 
+                # this indicates that the stage is not moving.
                 if status_bits['moving forward'] == 0 and status_bits['moving reverse']== 0:
                     is_completed = True
- 
-            msg_id=d["msg_id"]
+
+            # we will look for the position of the stage
+            msg_id = d["msg_id"]
             if msg_id not in self.completed_keys:
-                print("------> ",msg_id,d)
-                
+                                
                 d = self.get_poscounter()
-                print("pos counter ",d)
+                log(INFO, "get_poscounter return value (expected msgid=1042):  %s "%str(d))
                 if d.get("Position"):
                     print("Position %f mm" % (float(d["Position"])/(1.*self.ustep_to_pos)))
                 msg_id=d["msg_id"]
+
+            if msg_id in self.completed_keys:
+                is_completed = True
+
             time.sleep(0.5)
 
+        log(INFO,"movement is completed")
+        
         #self.read_response() # to flush the msg queue
 
         return msg_id
