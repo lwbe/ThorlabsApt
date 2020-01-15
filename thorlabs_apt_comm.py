@@ -91,7 +91,8 @@ class Thorlabs_apt_communication():
         available_data_format = ["word","short","dword","long","char","uchar","byte"]
 
         # check the data
-        apt_keys=self.tac_data.keys()
+        # needed for python 3 useless for python 2
+        apt_keys=list(self.tac_data.keys())
 
         # the header
         if "header" not in apt_keys:
@@ -119,7 +120,8 @@ class Thorlabs_apt_communication():
 
         for k in apt_keys:
             msg_dict = self.tac_data[k]
-            msg_keys = msg_dict.keys()
+            # needed for python 3 useless for python 2
+            msg_keys = list(msg_dict.keys())
 
             # check msg_id
             if "msg_id" not in msg_keys:

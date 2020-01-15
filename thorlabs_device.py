@@ -1,14 +1,22 @@
 import serial
 import os,sys,time
 
-# for python 2.7
-import ConfigParser as configparser
 
+py_version=sys.version_info
+if py_version[0] == 2:
+    # for python 2.x but tested for 2.7
+    import ConfigParser as configparser
+elif  py_version[0] == 3:
+    # python 3.x but python 3.6
+    import configparser
+else:
+    print("This version of python %d.%d.%d is not supported !!\nAborting" %
+          (py_version[0],py_version[1],py_version[2]))
+    sys.exit(0)
+    
 stages_file="MG17APTServer.ini"
 SERIAL_TIMEOUT=10
 from thorlabs_apt_comm import Thorlabs_apt_communication
-
-
 
 """
 Module containing a class to talk to devices throught the thorlabs_apt_comm module
