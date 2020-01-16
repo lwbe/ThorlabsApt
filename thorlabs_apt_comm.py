@@ -1,7 +1,7 @@
 import sys,json
 import pprint
 import struct
-
+import logging
 
 """
 Notes:
@@ -23,35 +23,36 @@ command_structure and response structure
   response_structure = [] means there is a response but is only a default header.
 """
 
-ERROR = 4
-WARN  = 3
-DEBUG = 2
-INFO  = 1
-NONE  = 0
+# logger facility
+# get the logger and set the level
+logger=logging.getLogger("thorlabs_apt_com")
+logger.setLevel(logging.INFO)
 
-LOG_LEVEL=INFO
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+
+# create formatter
+#formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+
+# add formatter to ch
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 pprint_dict=pprint.PrettyPrinter(indent=2,depth=4)
 print_dict=pprint_dict.pprint
-
-# utility functions
-def log(level,msg):
-    if level <= LOG_LEVEL:
-        print(msg)
 
 # --
 def format_msg(msg):
     return("\t%s" % msg.replace("\n","\n\t"))
 
 # --
-def on_warning(msg):
-    print("WARN\t:\n %s",format_msg(msg))
-
-# --
 def on_error(msg):
-    print(msg)
-    print("ERR\t:\n %s\nABORTING !!",format_msg(msg))
-    sys.exit(0)
+    logger.exception(format_msg(msg))
+    raise Exception()
+    #print(msg)
+    #print("ERR\t:\n %s\nABORTING !!",format_msg(msg))
+    #sys.exit(0)
 
 # --    
 def tohex(v):
@@ -78,6 +79,7 @@ class Thorlabs_apt_communication():
         try:
             self.tac_data = json.load(open(filename))
         except (IOError,ValueError) as e:
+            #TODO: raise error
             on_error("%s" % e)
 
         self.msg_id_to_keyword={}
@@ -96,6 +98,7 @@ class Thorlabs_apt_communication():
 
         # the header
         if "header" not in apt_keys:
+            # TODO: Raise error
             on_error("no header section in json file !!")
             # do some preparation
         msg_size,msg_pack_string,msg_val_names = self.compute_size_pack_string(self.tac_data["header"]["data_structure"])
@@ -106,6 +109,7 @@ class Thorlabs_apt_communication():
 
         # the header_long is used for send commands with data. 
         if "header_long" not in apt_keys:
+            # TODO: Raise error
             on_error("no header_long section in json file !!")
             # do some preparation
         msg_size,msg_pack_string,msg_val_names = self.compute_size_pack_string(self.tac_data["header_long"]["data_structure"])
@@ -125,15 +129,18 @@ class Thorlabs_apt_communication():
 
             # check msg_id
             if "msg_id" not in msg_keys:
+                # TODO: Raise error
                 on_error("missing \"msg_id\" for %s" % k)
 
             msg_keys.remove("msg_id")
             try:
                 msg_dict["msg_id"]=int(msg_dict["msg_id"],16)
             except ValueError as e:
+                # TODO: Raise error
                 on_error("%s\nCannot convert to int msg_id of %s with value %s" % (msg_dict["msg_id"],k))
 
             if msg_dict["msg_id"] in msg_ids:
+                # TODO: Raise error
                 on_error("duplicate \"msg_id\" entry %d (%s) for %s" % ( msg_dict["msg_id"],tohex(msg_dict["msg_id"]),k))
             msg_ids.append(msg_dict["msg_id"])
 
@@ -146,6 +153,7 @@ class Thorlabs_apt_communication():
                 msg_dict["msg_type"]="send"
 
                 if msg_dict["msg_type"] not in available_msg_types:
+                    # TODO: Raise error
                     on_error("Unknown msg_type %s for %s (possible values are %s)" % 
                              (msg_dict["msg_type"],
                               k,
@@ -162,12 +170,14 @@ class Thorlabs_apt_communication():
                 for data in ds:
                     for dk in data.keys():
                         if dk not in available_data_structure_keys:
+                            # TODO: Raise error
                             on_error("Unknown data_structure key %s for %s (possible values are %s)" % 
                                      (dk,
                                       k,
                                       ", ".join(available_data_structure_keys))
                             )
                 if data["format"].split('[')[0] not in available_data_format:
+                    # TODO: Raise error
                     on_error("Unknown data_format %s for %s (possible values are %s)" % 
                              (data["format"],
                               k,
@@ -184,17 +194,21 @@ class Thorlabs_apt_communication():
             # check that left keys are legal.
             for left_keys in msg_keys:
                 if left_keys not in available_msg_keys:
+                    # TODO: Raise error
                     on_error("Unknown key %s for %s (possible values are %s)" % (left_keys,
                                                                                  k,
                                                                                  ", ".join(available_msg_keys)))
             
         self.msg_id_to_keyword={}
-        log(DEBUG,"keys are:")
+        #log(DEBUG,"keys are:")
+        logger.debug("keys are:")
         for k in self.tac_data:
             if k.startswith("MGMSG_"):
                 self.msg_id_to_keyword[self.tac_data[k]["msg_id"]] = k
-                log(DEBUG,"%s" % (k))
-                log(DEBUG,"\t\t%s" % (self.tac_data[k]["msg_id"]))
+                #log(DEBUG,"%s" % (k))
+                #log(DEBUG,"\t\t%s" % (self.tac_data[k]["msg_id"]))
+                logger.debug("%s" % (k))
+                logger.debug("\t\t%s" % (self.tac_data[k]["msg_id"]))
 
 # --            
     def compute_size_pack_string(self,data_to_scan):
@@ -237,7 +251,8 @@ class Thorlabs_apt_communication():
             else:
                 print("Unknown type \nABORTING")
                 sys.exit(0)
-            log(DEBUG,"type : %s field_name %s total lentgh %d" % (d["format"],d["field"],_length))
+            #log(DEBUG,"type : %s field_name %s total lentgh %d" % (d["format"],d["field"],_length))
+            logger.debug("type : %s field_name %s total lentgh %d" % (d["format"],d["field"],_length))
         return _length,pack_string,val_names
 
 # --
@@ -246,6 +261,7 @@ class Thorlabs_apt_communication():
         keyword may be the string or the msg_id
         """
         if keyword not in self.tac_data and keyword not in self.msg_id_to_keyword:
+            #TODO: raise error
             on_error("Keyword %s not found available keywords are: \n\t%s" % (keyword,
                                                                           "\n\t".join(self.tac_data.keys())))
             sys.exit(0)
@@ -292,8 +308,10 @@ class Thorlabs_apt_communication():
         except struct.error as e:
             err_msg = "Error : %s with pack_strings %s and args %s\n" % (e,pack_string,tohex(d["msg_id"])+str(args[1:]))
             err_msg += "Expected arguments are: %s"% (", ".join(expected_names))
+            #TODO: raise error
             on_error(err_msg)
-        log(INFO,"msg sent: %s (%s)" % (msg,tohex(msg)))
+        #log(INFO,"msg sent: %s (%s)" % (msg,tohex(msg)))
+        logger.info("msg sent: %s (%s)" % (msg,tohex(msg)))
         return d["msg_type"],msg
 # --
     def create_message_from_list(self,*args):
@@ -316,6 +334,7 @@ class Thorlabs_apt_communication():
             err_msg = "the number of args supplied %d is not equal to the expected one %d\n" % (len(params),len(expected_names))  
             err_msg += "args supplied : %s\n" % ("\n\t".join([str(i) for i in params]))
             err_msg += "args expected : %s" % ("\n\t".join(expected_names))
+            #TODO: raise error
             on_error(err_msg)
             
         try:
@@ -323,9 +342,11 @@ class Thorlabs_apt_communication():
         except struct.error as e:
             err_msg = "Error : %s with pack_strings %s and args %s\n" % (e,pack_string,tohex(d["msg_id"])+str(params[1:]))
             err_msg += "Expected arguments are: %s"% (", ".join(expected_names))
+            #TODO: raise error
             on_error(err_msg)
 
-        log(INFO,"msg sent: %s (%s) params : %s" % (msg,tohex(msg),str(params)))
+        #log(INFO,"msg sent: %s (%s) params : %s" % (msg,tohex(msg),str(params)))
+        logger.info("msg sent: %s (%s) params : %s" % (msg,tohex(msg),str(params)))
 
         return d["msg_type"],msg
 
@@ -339,7 +360,8 @@ class Thorlabs_apt_communication():
         msg_val_names=self.tac_data["header"]["msg_val_names"]+d["msg_val_names"]
         try:
             unpack_msg = struct.unpack(pack_string,msg)
-            log(DEBUG,"unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
+            #log(DEBUG,"unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
+            logger.debug("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
         except struct.error as e:
             print("Error : %s pack_string %s msg %s " % (e,pack_string,msg))
             print("Mismatch between definition and what's received we expect %s " %  (", ".join(msg_val_names)))
@@ -375,13 +397,15 @@ class Thorlabs_apt_communication():
             print("Error : %s pack_string %s msg %s " % (e,pack_string,msg))
             print("Mismatch between definition and what's received we expect %s " %  (", ".join(val_names)))
             print("msg received: %s (%s)" % (msg,tohex(msg)))
-            log("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
+            #log("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
+            logger.debug("unpack_msg %s len %d" % (str(unpack_msg),len(unpack_msg)))
 
         if unpack_msg[0] in  self.msg_id_to_keyword: 
             keyword = self.msg_id_to_keyword[unpack_msg[0]]
             d = self.get_keyword_data(keyword)
             return d["msg_size"],keyword
         else:
+            #TODO: raise error
             on_error("cannot find keyword for value %d (%s) full msg %s" % (unpack_msg[0],tohex(unpack_msg[0]),str(unpack_msg)))
 
 if __name__=="__main__":
@@ -393,5 +417,9 @@ if __name__=="__main__":
     print("%s %s" %(r,msg))
 
     r,msg = t.create_message("MGMSG_MOT_SET_LIMSWITCHPARAMS",0,0x1,0x50,1,2,3,4,5,6)
+    print("%s %s" %(r,msg))
+
+    # should raise an error
+    r,msg = t.create_message("MOT_SET_LIMSWITCHPARAMS",0,0x1,0x50,1,2,3,4,5,6)
     print("%s %s" %(r,msg))
 
