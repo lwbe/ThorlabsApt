@@ -10,4 +10,6 @@ d1.configure()
 pprint.pprint(d1.get_info())
 
 
+d2 = Thorlabs_device("45839057","LTS300","LTS300 300mm Stage",1) 
 
+d3 = Thorlabs_device("45897070","HS LTS300","HS LTS300 300mm Stage",1) 

@@ -408,6 +408,15 @@ class Thorlabs_apt_communication():
             #TODO: raise error
             on_error("cannot find keyword for value %d (%s) full msg %s" % (unpack_msg[0],tohex(unpack_msg[0]),str(unpack_msg)))
 
+    def raw_string_to_hex_string(self,s,l=None):
+        "convert 6440  to d\x04"
+        if l == None:
+            l=len(s)/2
+            
+        return "".join([chr(int(s[2*i:2*i+2],16)) for i in range(l)])
+
+
+
 if __name__=="__main__":
     t=Thorlabs_apt_communication()
 

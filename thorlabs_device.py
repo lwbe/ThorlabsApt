@@ -56,7 +56,7 @@ DEBUG = 2
 INFO  = 1
 NONE  = 0
 
-LOG_LEVEL=INFO
+LOG_LEVEL=DEBUG
 
 # parameters for the various stages obtained throught the first two digit of the serial number
 # according to the doc
@@ -336,7 +336,9 @@ class Thorlabs_device():
         def wrapper(self):
             p = func(self)
             log(INFO,"keyword %s params: %s" % (p[0],", ".join([str(i) for i in p[1:]])))
-            return  self.send_command(*p)
+            ret_val = self.send_command(*p)
+            
+            return  ret_val
         return wrapper
 
 # --
